@@ -1,0 +1,3 @@
+ADD save download file to RAM
+ADD http requset for return name file, size file & etc
+ADD string version function; const wchar_t* edit to std::wstring
