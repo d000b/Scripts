@@ -1,0 +1,1 @@
+Linear Vector based on array & method from std::vector
