@@ -7,3 +7,6 @@ Description: Helps to extract content from html, xml tags.
 
 File: Scripts\URLDownloadFile\URLDownloadFile.h <br>
 Description: Download files from urls to disk without cache
+
+File: Scripts\Vector\Vector.h <br>
+Description: Linear Vector based std::vector & array
