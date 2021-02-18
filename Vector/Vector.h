@@ -276,7 +276,7 @@ public:
 		start = 0;
 		allocate(0);
 	}
-	Vector(Vector& v) = delete;
+	Vector(Vector&) = delete;
 //	Vector(Vector& v)
 //	{
 //		v.links++;
