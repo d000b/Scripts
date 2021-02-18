@@ -109,7 +109,7 @@ public:
 	decltype(auto) push_back(type val)
 	{
 		if (used >= allocated)
-			allocate(allocated > 1 ? mul_alloc * allocated : 2);
+			allocate(allocated * mul_alloc + 1);
 		else if (used > 0)
 			reinterpret_cast<type*&>(last)++;
 		*reinterpret_cast<type*>(last) = val;
@@ -128,7 +128,7 @@ public:
 		if (place >= allocated)
 		{
 			used = place;
-			allocate(mul_alloc * place);
+			allocate(place * mul_alloc + 1);
 			*last = val;
 		}
 		else if (place > used)
@@ -232,7 +232,7 @@ public:
 			return reinterpret_cast<type*>(start)[i];
 		else
 		{
-			allocate((i + 1) * mul_alloc);
+			allocate(i * mul_alloc + 1);
 			return reinterpret_cast<type*>(start)[i];
 		}
 	}
