@@ -142,6 +142,16 @@ public:
 	{
 		return used;
 	}
+	decltype(auto) copy(Vector* v)
+	{
+		v->links = 1;
+		v->allocate(allocated);
+		if (used)
+		{
+			v->used = used;
+			memcpy(v->start, start, used * sizeof(type));
+		}
+	}
 	decltype(auto) clear()
 	{
 		last = start;
@@ -235,11 +245,6 @@ public:
 		return const_reverse_iterator(cbegin());
 	}
 
-	decltype(auto) operator=(Vector& v)
-	{
-		v.links++;
-		*this = v;
-	}
 	decltype(auto) operator[](size_t i)
 	{
 		if (i < allocated)
@@ -271,11 +276,12 @@ public:
 		start = 0;
 		allocate(0);
 	}
-	Vector(Vector& v)
-	{
-		v.links++;
-		*this = v;
-	}
+	Vector(Vector& v) = delete;
+//	Vector(Vector& v)
+//	{
+//		v.links++;
+//		*this = v;
+//	}
 
 	~Vector()
 	{
