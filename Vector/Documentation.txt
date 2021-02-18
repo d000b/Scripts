@@ -1,0 +1,4 @@
+rule-links
+1) Although the counting of references to duplicate variables was added, 
+	the contents of the classes are not synchronized, 
+	so please do not work with copies of Vector!

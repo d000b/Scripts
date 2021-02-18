@@ -65,6 +65,7 @@ class  UltimaAPI::Vector
 {
 	double mul_alloc = 1.6487; // sqrt(e)
 
+	size_t links;
 	size_t used;
 	size_t allocated;
 	void* start, * last;
@@ -234,6 +235,11 @@ public:
 		return const_reverse_iterator(cbegin());
 	}
 
+	decltype(auto) operator=(Vector& v)
+	{
+		v.links++;
+		*this = v;
+	}
 	decltype(auto) operator[](size_t i)
 	{
 		if (i < allocated)
@@ -247,27 +253,35 @@ public:
 
 	Vector(std::initializer_list<type> v)
 	{
+		links = 1;
 		allocate(used = v.size());
 		memcpy(start, v.begin(), used * sizeof(type));
 	}
 	Vector()
 	{
+		links = 1;
 		used = 0;
 		start = 0;
 		allocate(0);
 	}
 	Vector(size_t sz)
 	{
+		links = 1;
 		used = 0;
 		start = 0;
 		allocate(0);
 	}
+	Vector(Vector& v)
+	{
+		v.links++;
+		*this = v;
+	}
 
 	~Vector()
 	{
-		last = 0;
+		--links;
 		allocated = used = 0;
-		if (start)
+		if (!links && start)
 		{
 			delete[] start;
 		}
