@@ -179,6 +179,14 @@ public:
 	{
 		allocate(sz);
 	}
+	decltype(auto) rate(double val)
+	{
+		mul_alloc = val;
+	}
+	decltype(auto) rate()
+	{
+		return double& (mul_alloc);
+	}
 	decltype(auto) max_size()
 	{
 		return (1 << (8 * sizeof(allocated))) / sizeof(type);
