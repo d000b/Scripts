@@ -1,4 +1,3 @@
-FIX Vector::Vector(Vector&) (fix copying Vector)
 ADD MultidimensionalVector
 COMMENT At the current time (02/16/2021) the problem is that the function cannot return 2 types, and there is no desire to build a template based Vector<Vector<Vector<float>>>
-COMMENTThe Main problem of this method, in the line above, is the impossibility of dynamic initialization of the shopping mall, the dimension will always remain static
+COMMENT The Main problem of this method, in the line above, is the impossibility of dynamic initialization of the shopping mall, the dimension will always remain static
