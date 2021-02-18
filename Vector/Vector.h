@@ -65,7 +65,6 @@ class  UltimaAPI::Vector
 {
 	double mul_alloc = 1.6487; // sqrt(e)
 
-	size_t links;
 	size_t used;
 	size_t allocated;
 	void* start, * last;
@@ -144,7 +143,6 @@ public:
 	}
 	decltype(auto) copy(Vector* v)
 	{
-		v->links = 1;
 		v->allocate(allocated);
 		if (used)
 		{
@@ -175,7 +173,7 @@ public:
 	}
 	decltype(auto) resize(size_t sz)
 	{
-		if (used = sz < allocated)
+		if ((used = sz) < allocated)
 			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start) + used;
 		else allocate(used);
 	}
@@ -258,36 +256,30 @@ public:
 
 	Vector(std::initializer_list<type> v)
 	{
-		links = 1;
 		allocate(used = v.size());
 		memcpy(start, v.begin(), used * sizeof(type));
 	}
 	Vector()
 	{
-		links = 1;
 		used = 0;
 		start = 0;
 		allocate(0);
 	}
 	Vector(size_t sz)
 	{
-		links = 1;
 		used = 0;
 		start = 0;
 		allocate(0);
 	}
-	Vector(Vector&) = delete;
-//	Vector(Vector& v)
-//	{
-//		v.links++;
-//		*this = v;
-//	}
+	Vector(Vector& v)
+	{
+		v.copy(this);
+	}
 
 	~Vector()
 	{
-		--links;
 		allocated = used = 0;
-		if (!links && start)
+		if (start)
 		{
 			delete[] start;
 		}
