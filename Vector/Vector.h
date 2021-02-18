@@ -67,7 +67,7 @@ class  UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	void* start, *last;
+	void* start, * last;
 public:
 	using iterator = VectorIterator<type>;
 	using const_iterator = VectorIterator<const type>;
@@ -164,22 +164,16 @@ public:
 	}
 	decltype(auto) resize(size_t sz)
 	{
-		used = sz;
-		if (sz < allocated)
+		if (used = sz < allocated)
 			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start) + used;
-		else  allocate(used);
+		else allocate(used);
 	}
 	decltype(auto) free()
 	{
+		allocated = used = 0;
+		last = nullptr;
 		if (start)
-		{
 			delete[] start;
-		}
-		if (allocated > 0)
-		{
-			last = nullptr;
-			allocated = used = 0;
-		}
 	}
 	decltype(auto) reserve(size_t sz)
 	{
@@ -236,7 +230,11 @@ public:
 	{
 		if (i < allocated)
 			return reinterpret_cast<type*>(start)[i];
-		else return *reinterpret_cast<type*>(start);
+		else
+		{
+			allocate((i + 1) * mul_alloc);
+			return reinterpret_cast<type*>(start)[i];
+		}
 	}
 
 	Vector(std::initializer_list<type> v)
@@ -259,10 +257,10 @@ public:
 
 	~Vector()
 	{
+		last = 0;
+		allocated = used = 0;
 		if (start)
 		{
-			//	if (allocated == 0)
-			//		throw(L"Trobble Shit Check all vector! Maybe outsides correct for data in class")
 			delete[] start;
 		}
 	}
