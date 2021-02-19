@@ -152,11 +152,9 @@ public:
 	{
 		return *reinterpret_cast<type*>(last);
 	}
-	decltype(auto) last()
+	decltype(auto) right() // not safe func! After using check allocated size (used > 0)
 	{
-		if (allocated > 0)
-			return used > 0 ? *(reinterpret_cast<type*>(last)--) : *(reinterpret_cast<type*>(start);
-		else return type();
+		return (used > 0 ? *(reinterpret_cast<type*&>(last)--) : *(reinterpret_cast<type*&>(start)));
 	}
 	decltype(auto) capacity()
 	{
