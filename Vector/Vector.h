@@ -67,7 +67,7 @@ class  UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	void* start, * last;
+	void* start, *last;
 public:
 	using iterator = VectorIterator<type>;
 	using const_iterator = VectorIterator<const type>;
@@ -96,14 +96,7 @@ private:
 				allocated = al;
 			}
 		}
-		else
-		{
-			used = 0;
-			allocated = 0;
-			last = nullptr;
-			if (start)
-				delete[] start;
-		}
+		else free();
 	}
 public:
 	decltype(auto) push_back(type val)
@@ -243,6 +236,10 @@ public:
 		return const_reverse_iterator(cbegin());
 	}
 
+	decltype(auto) operator~()
+	{
+		free();
+	}
 	decltype(auto) operator[](size_t i)
 	{
 		if (i >= allocated)
@@ -275,11 +272,7 @@ public:
 
 	~Vector()
 	{
-		allocated = used = 0;
-		if (start)
-		{
-			delete[] start;
-		}
+		free();
 	}
 };
 
