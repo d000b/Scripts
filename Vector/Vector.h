@@ -67,7 +67,7 @@ class  UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	void* start, *last;
+	void* start, * last;
 public:
 	using iterator = VectorIterator<type>;
 	using const_iterator = VectorIterator<const type>;
@@ -152,13 +152,19 @@ public:
 	{
 		return *reinterpret_cast<type*>(last);
 	}
+	decltype(auto) last()
+	{
+		if (allocated > 0)
+			return used > 0 ? *(reinterpret_cast<type*>(last)--) : *(reinterpret_cast<type*>(start);
+		else return type();
+	}
 	decltype(auto) capacity()
 	{
 		return allocated;
 	}
 	decltype(auto) data()
 	{
-		return start;
+		return reinterpret_cast<type*>(start);
 	}
 	decltype(auto) empty()
 	{
