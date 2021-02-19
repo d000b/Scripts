@@ -245,13 +245,10 @@ public:
 
 	decltype(auto) operator[](size_t i)
 	{
-		if (i < allocated)
-			return reinterpret_cast<type*>(start)[i];
-		else
-		{
+		if (i >= allocated)
 			allocate(i * mul_alloc + 1);
-			return reinterpret_cast<type*>(start)[i];
-		}
+		if (i >= used) used = i + 1;
+		return reinterpret_cast<type*&>(start)[i];
 	}
 
 	Vector(std::initializer_list<type> v)
