@@ -80,17 +80,16 @@ private:
 		{
 			if (!start)
 			{
-				start = new type[allocated = al];
+				last = start = new type[allocated = al];
 			}
 			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
-				if (al > allocated);
-				else
+				if (al < allocated);
 				{
 					used = used > al ? al : used;
 				}
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = new(start) type[al]) + used;
+				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(start) type[al]) + used;
 				allocated = al;
 			}
 		}
