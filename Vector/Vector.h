@@ -78,7 +78,11 @@ private:
 	{
 		if (al > 0)
 		{
-			if (al == allocated); // maybe adding code to do something!
+			if (!start)
+			{
+				start = new type[allocated = al];
+			}
+			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
 				if (al > allocated);
