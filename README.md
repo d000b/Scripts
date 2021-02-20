@@ -10,3 +10,6 @@ Description: Download files from urls to disk without cache
 
 File: Scripts\Vector\Vector.h <br>
 Description: Linear Vector based std::vector & array
+
+File: Scripts\SmartPointer\SmartPointer.h <br>
+Counts links and will not delete pointers while the number of link > 0
