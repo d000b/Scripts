@@ -67,7 +67,7 @@ class  UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	void* start, * last;
+	void* start, *last;
 public:
 	using iterator = VectorIterator<type>;
 	using const_iterator = VectorIterator<const type>;
@@ -130,6 +130,17 @@ public:
 		}
 		else start[place] = val;
 	}
+	decltype(auto) insert(size_t place, type* val, size_t sz)
+	{
+		if (place + sz >= allocated)
+		{
+			used = place + sz;
+			allocate(used * mul_alloc + 1);
+		}
+		memcpy(reinterpret_cast<type*&>(start) + place, val, sz);
+		if (place + sz > used)
+			last = reinterpret_cast<type*>(start) + used;
+	}
 	decltype(auto) size()
 	{
 		return used;
@@ -177,9 +188,9 @@ public:
 	decltype(auto) free()
 	{
 		allocated = used = 0;
-		last = nullptr;
 		if (start)
 			delete[] start;
+		last = nullptr;
 	}
 	decltype(auto) reserve(size_t sz)
 	{
@@ -240,6 +251,12 @@ public:
 		return const_reverse_iterator(cbegin());
 	}
 
+	decltype(auto) operator()(std::initializer_list<type> v)
+	{
+		start = nullptr;
+		allocate(used = v.size());
+		memcpy(start, v.begin(), used * sizeof(type));
+	}
 	decltype(auto) operator~()
 	{
 		free();
@@ -254,8 +271,7 @@ public:
 
 	Vector(std::initializer_list<type> v)
 	{
-		allocate(used = v.size());
-		memcpy(start, v.begin(), used * sizeof(type));
+		this->operator()(v);
 	}
 	Vector()
 	{
@@ -266,8 +282,14 @@ public:
 	Vector(size_t sz)
 	{
 		used = 0;
-		start = 0;
-		allocate(0);
+		start = nullptr;
+		allocate(sz);
+	}
+	Vector(size_t sz, type* ray)
+	{
+		used = 0;
+		start = nullptr;
+		insert(0, ray, sz);
 	}
 	Vector(Vector& v)
 	{
