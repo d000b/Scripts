@@ -81,18 +81,12 @@ private:
 			if (al == allocated); // maybe adding code to do something!
 			else
 			{
-				void* ptr = new type[al];
 				if (al > allocated);
 				else
 				{
 					used = used > al ? al : used;
 				}
-				if (start)
-				{
-					memcpy(ptr, start, used * sizeof(type));
-					delete[] start;
-				}
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = ptr) + used;
+				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = new(start) type[al]) + used;
 				allocated = al;
 			}
 		}
