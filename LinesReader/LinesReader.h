@@ -34,6 +34,7 @@ bool  UltimaAPI::fread(const wchar_t* name, std::vector<std::wstring>& wcs)
 		while (std::getline(f, str))
 			if (ut8toWide(wc, str))
 				wcs.push_back(wc);
+		f.close();
 		return true;
 	}
 	else return false;

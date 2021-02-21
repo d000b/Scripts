@@ -16,3 +16,12 @@ Counts links and will not delete pointers while the number of link > 0
 
 File: Scripts\LinesReader\LinesReader.h <br>
 Read lines from file, return Wide bytes text
+
+File: Scripts\BasicDestructor\BasicDestructor.h <br>
+Using for correct destruct classes in Vector
+
+File: Scripts\BasicIterator\BasicIterator.h <br>
+Extrapolate VectorIterator to String & renamed to BasicIterator
+
+File: Scripts\String\String.h <br>
+It's s.t.r.i.n.g.s, yes, IT IS STRING 

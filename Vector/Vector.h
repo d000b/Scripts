@@ -3,11 +3,12 @@
 #include <memory.h>
 #include <initializer_list>
 
+#include "../BasicIterator/BasicIterator.h"
+
 namespace UltimaAPI
 {
 #define MULTIVECTOR 0
 
-	template <typename type>  class VectorIterator;
 	template <typename type>  class Vector;
 
 #if defined(MULTIVECTOR) && MULTIVECTOR
@@ -15,50 +16,6 @@ namespace UltimaAPI
 	template <typename type>  class MultidimensionalVector;
 #endif
 }
-
-template <typename type>
-class  UltimaAPI::VectorIterator : public std::iterator<std::input_iterator_tag, type>
-{
-	friend class UltimaAPI::Vector<type>;
-#if defined(MULTIVECTOR) && MULTIVECTOR
-	friend class UltimaAPI::MultidimensionalVector<type>;
-#endif
-
-	type* pointer;
-private:
-	VectorIterator(type* p) : pointer(p)
-	{
-
-	}
-public:
-	VectorIterator(const VectorIterator& it) : pointer(it.p)
-	{
-
-	}
-
-	bool operator!=(VectorIterator const& it) const
-	{
-		return pointer != it.pointer;
-	}
-	bool operator==(VectorIterator const& it) const
-	{
-		return pointer == it.pointer;
-	}
-	typename VectorIterator::reference operator*() const
-	{
-		return *pointer;
-	}
-	VectorIterator& operator++()
-	{
-		pointer++;
-		return *this;
-	}
-	VectorIterator& operator--()
-	{
-		pointer--;
-		return *this;
-	}
-};
 
 template <typename type>
 class  UltimaAPI::Vector
@@ -69,8 +26,8 @@ class  UltimaAPI::Vector
 	size_t allocated;
 	void* start, *last;
 public:
-	using iterator = VectorIterator<type>;
-	using const_iterator = VectorIterator<const type>;
+	using iterator = BasicIterator<type>;
+	using const_iterator = BasicIterator<const type>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 private:
@@ -130,10 +87,7 @@ public:
 	decltype(auto) insert(size_t place, type* val, size_t sz)
 	{
 		if (place + sz >= allocated)
-		{
-			used = place + sz;
-			allocate(used * mul_alloc + 1);
-		}
+			allocate((used = place + sz) * mul_alloc + 1);
 		memcpy(reinterpret_cast<type*&>(start) + place, val, sz);
 		if (place + sz > used)
 			last = reinterpret_cast<type*>(start) + used;
@@ -258,6 +212,26 @@ public:
 	{
 		free();
 	}
+	decltype(auto) operator+=(type c)
+	{
+		push_back(c);
+	}
+	decltype(auto) operator+=(Vector v)
+	{
+		insert(used, v.start, v.used);
+	}
+	decltype(auto) operator+=(Vector& v)
+	{
+		insert(used, v.start, v.used);
+	}
+	decltype(auto) operator+=(const Vector v) const 
+	{
+		insert(used, v.start, v.used);
+	}
+	decltype(auto) operator+=(const Vector& v) const
+	{
+		insert(used, v.start, v.used);
+	}
 	decltype(auto) operator[](size_t i)
 	{
 		if (i >= allocated)
@@ -272,9 +246,8 @@ public:
 	}
 	Vector()
 	{
-		used = 0;
-		start = 0;
-		allocate(0);
+		last = start = nullptr;
+		allocated = used = 0;
 	}
 	Vector(size_t sz)
 	{
