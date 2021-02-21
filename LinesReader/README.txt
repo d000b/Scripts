@@ -1,0 +1,1 @@
+Read lines from file, return Wide bytes text

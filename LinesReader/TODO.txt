@@ -1,0 +1,1 @@
+if I wrote my own String, then perhaps right after I fixed the heap corruption in Vector
