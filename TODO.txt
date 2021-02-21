@@ -1,0 +1,6 @@
+To ADD:
+	BasicDestructor
+	CircularVector
+
+To FIX:
+	String -> allocated == length + 1(null terminated symbol)
