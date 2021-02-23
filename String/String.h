@@ -14,16 +14,17 @@ namespace UltimaAPI
 	using WString = BasicString<wchar_t>;
 };
 
-// fix length (it's used + 1)
+
 template <typename type>
 class  UltimaAPI::BasicString
 {
 	double mul_alloc = 1.6487; // sqrt(e)
 	void*  string, *last;
-	size_t allocated, length;
+	size_t allocated, used;
 
 	static_assert(std::is_same<type, char>::value || std::is_same<type, wchar_t>::value, L"Error type");
 	
+	static_assert(false, L"fix length error");
 public:
 	using symbol = type;
 	using dynamic_string = type*;
@@ -39,10 +40,10 @@ private:
 	{
 		size_t i = 0;
 		for (auto&& c : *this)
-			if (c) i++
+			if (c) i++;
 			else
 			{
-				length = i;
+				used = i;
 				return;
 			}
 	}
@@ -56,8 +57,8 @@ private:
 			else
 			{
 				if (al < allocated);
-					length = length > al ? al : length;
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(string) type[al]) + length;
+					used = used > al ? al : used;
+				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(string) type[al]) + used;
 				allocated = al;
 			}
 		}
@@ -66,59 +67,63 @@ private:
 public:
 	decltype(auto) push_back(type val)
 	{
-		if (length >= allocated)
+		if (used + 1 >= allocated)
 			allocate(allocated * mul_alloc + 1);
-		else if (length > 0)
+		else if (used > 0)
 			reinterpret_cast<type*&>(last)++;
 		*reinterpret_cast<type*>(last) = val;
-		*(reinterpret_cast<type*>(last) + 1) = 0;
-		length++;
+		*(reinterpret_cast<type*>(last)++) = 0;
+		used++;
 	}
 	decltype(auto) pop_back()
 	{
-		if (length > 0)
+		if (used > 0)
 		{
-			reinterpret_cast<type*&>(last)--;
-			length--;
+			*(reinterpret_cast<type*&>(last)--) = 0;
+			used--;
 		}
 	}
 	decltype(auto) insert(size_t place, type val)
 	{
-		if (place >= allocated)
+		if (place + 1 >= allocated)
 		{
-			length = place;
+			used = place;
 			allocate(place * mul_alloc + 1);
 			*last = val;
+			*(reinterpret_cast<type*&>(last)++) = 0;
 		}
-		else if (place > length)
-			*(last = string + (length = place)) = val;
+		else if (place > used)
+		{
+			*(last = string + (used = place)) = val;
+			*(reinterpret_cast<type*&>(last)++) = 0;
+		}
 		else string[place] = val;
 	}
 	decltype(auto) insert(size_t place, type* val, size_t sz)
 	{
 		if (place + sz >= allocated)
-			allocate((length = place + sz) * mul_alloc + 1);
+			allocate((used = place + sz) * mul_alloc + 1);
 		memcpy(reinterpret_cast<type*&>(string) + place, val, sz);
-		if (place + sz > length)
-			last = reinterpret_cast<type*>(string) + length;
+		if (place + sz > used)
+			last = reinterpret_cast<type*>(string) + used;
 	}
 	decltype(auto) size()
 	{
-		return length;
+		return used;
 	}
 	decltype(auto) copy(BasicString* v)
 	{
 		v->allocate(allocated);
-		if (length)
+		if (used)
 		{
-			v->length = length;
-			memcpy(v->string, string, length * sizeof(type));
+			v->used = used;
+			memcpy(v->string, string, used * sizeof(type));
 		}
 	}
 	decltype(auto) clear()
 	{
 		last = string;
-		length = 0;
+		used = 0;
 	}
 	decltype(auto) back()
 	{
@@ -126,7 +131,7 @@ public:
 	}
 	decltype(auto) right()
 	{
-		return (length > 0 ? *(reinterpret_cast<type*&>(last)--) : reinterpret_cast<type&>(string));
+		return (used > 0 ? *(reinterpret_cast<type*&>(last)--) : reinterpret_cast<type&>(string));
 	}
 	decltype(auto) capacity()
 	{
@@ -138,17 +143,17 @@ public:
 	}
 	decltype(auto) empty()
 	{
-		return length == 0;
+		return used == 0;
 	}
 	decltype(auto) resize(size_t sz)
 	{
-		if ((length = sz) < allocated)
-			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(string) + length;
-		else allocate(length);
+		if ((used = sz) < allocated)
+			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(string) + used;
+		else allocate(used);
 	}
 	decltype(auto) free()
 	{
-		allocated = length = 0;
+		allocated = used = 0;
 		if (string)
 			delete[] string;
 		last = nullptr;
@@ -175,8 +180,8 @@ public:
 	}
 	decltype(auto) shrink_to_fit()
 	{
-		if (length < allocated)
-			allocate(length);
+		if (used < allocated)
+			allocate(used);
 	}
 
 	decltype(auto) begin()
@@ -215,8 +220,8 @@ public:
 	decltype(auto) operator()(std::initializer_list<type> v)
 	{
 		string = nullptr;
-		allocate(length = v.size());
-		memcpy(string, v.begin(), length * sizeof(type));
+		allocate(used = v.size());
+		memcpy(string, v.begin(), used * sizeof(type));
 	}
 	decltype(auto) operator~()
 	{
@@ -228,29 +233,29 @@ public:
 	}
 	decltype(auto) operator+=(BasicString s)
 	{
-		insert(length, s.string, s.length);
+		insert(used, s.string, s.used);
 	}
 	decltype(auto) operator+=(BasicString& s)
 	{
-		insert(length, s.string, s.length);
+		insert(used, s.string, s.used);
 	}
 	decltype(auto) operator+=(const BasicString s) const
 	{
-		insert(length, s.string, s.length);
+		insert(used, s.string, s.used);
 	}
 	decltype(auto) operator+=(const BasicString& s) const
 	{
-		insert(length, s.string, s.length);
+		insert(used, s.string, s.used);
 	}
 	decltype(auto) operator[](size_t i) const
 	{
-		if (i < length)
+		if (i < used)
 			return reinterpret_cast<const_symbol*>(string)[i];
 		else return const_symbol(0);
 	}
 	decltype(auto) operator[](size_t i)
 	{
-		if (i < length)
+		if (i < used)
 			return reinterpret_cast<symbol*>(string)[i];
 		else return symbol(0);
 	}
@@ -262,17 +267,17 @@ public:
 	BasicString()
 	{
 		last = string = nullptr;
-		allocated = length = 0;
+		allocated = used = 0;
 	}
 	BasicString(size_t sz)
 	{
-		length = 0;
+		used = 0;
 		string = nullptr;
 		allocate(sz);
 	}
 	BasicString(size_t sz, type* ray)
 	{
-		length = 0;
+		used = 0;
 		string = nullptr;
 		insert(0, ray, sz);
 	}

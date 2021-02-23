@@ -1,6 +1,9 @@
 To ADD:
 	BasicDestructor
 	CircularVector
+	Filter Bloom's
 
 To FIX:
+	CircularVector -> (I had idea in paper sheet, but i can't return iterator)
 	String -> allocated == length + 1(null terminated symbol)
+	LinesReader -> (idk)
