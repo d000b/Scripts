@@ -14,6 +14,8 @@ namespace UltimaAPI
 template <typename type>
 class  UltimaAPI::CircularVector
 {
+	static_assert(1, "need to fix");
+
 	double mul_alloc = 1.6487; // sqrt(e)
 
 	size_t used;
