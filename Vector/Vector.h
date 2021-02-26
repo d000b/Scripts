@@ -114,10 +114,11 @@ public:
 	{
 		return *reinterpret_cast<type*>(last);
 	}
-	decltype(auto) right() // not safe func! After using check allocated size (used > 0)
-	{
-		return (used > 0 ? *(reinterpret_cast<type*&>(last)--) : *(reinterpret_cast<type*&>(start)));
-	}
+//  I don't remember how I wrote it. Understand and refine this as it causes problems!
+//	decltype(auto) right() // not safe func! After using check allocated size (used > 0)
+//	{
+//		return (used > 0 ? *(reinterpret_cast<type*&>(last)--) : *(reinterpret_cast<type*&>(start)));
+//	}
 	decltype(auto) capacity()
 	{
 		return allocated;
@@ -236,7 +237,11 @@ public:
 	{
 		if (i >= allocated)
 			allocate(i * mul_alloc + 1);
-		if (i >= used) used = i + 1;
+		if (i >= used)
+		{
+			used = i + 1;
+			last = reinterpret_cast<type*&>(start) + used;
+		}
 		return reinterpret_cast<type*&>(start)[i];
 	}
 
