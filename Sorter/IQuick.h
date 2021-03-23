@@ -11,8 +11,8 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right)
 	type pivot = s[(left + right) / 2];
 	while (i <= j)
 	{
-		while (s[i] < pivot)  i++;
-		while (s[j] > pivot)  j--;
+		while (s[i] < pivot) i++;
+		while (s[j] > pivot) j--;
 		if (i <= j)
 		{
 			swap(&s[i], &s[j]);
