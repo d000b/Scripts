@@ -22,9 +22,7 @@ namespace
 		}
 		if (largest != i)
 		{
-			type tmp = a[i];
-			a[i] = a[largest];
-			a[largest] = tmp;
+			UltimaAPI::swap(&a[i], &a[largest]);
 			Heapify(a, largest, n);
 		}
 	}
@@ -45,9 +43,7 @@ namespace
 		}
 		if (largest != i)
 		{
-			type tmp = a[i];
-			a[i] = a[largest];
-			a[largest] = tmp;
+			UltimaAPI::swap(&a[i], &a[largest]);
 			Heapify(a, largest, n, function);
 		}
 	}
@@ -62,9 +58,7 @@ void  UltimaAPI::ISorters::HeapSort(type* a, size_t n)
 	}
 	for (size_t i = n - 1; i > 0; i--)
 	{
-		int tmp = a[0];
-		a[0] = a[i];
-		a[i] = tmp;
+		swap(&a[0], &a[i]);
 		::Heapify(a, 0, i);
 	}
 }
@@ -78,9 +72,7 @@ void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, bool function(type, type)
 	}
 	for (size_t i = n - 1; i > 0; i--)
 	{
-		type tmp = a[0];
-		a[0] = a[i];
-		a[i] = tmp;
+		swap(a[0], a[i]);
 		::Heapify(a, 0, i, function);
 	}
 }
