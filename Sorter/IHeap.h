@@ -12,11 +12,11 @@ namespace
 		size_t l = 2 * i + 1;
 		size_t r = 2 * i + 2;
 		size_t largest = i;
-		if (l < n && a[l] > a[i])
+		if (l < n && a[i] < a[l])
 		{
 			largest = l;
 		}
-		if (r < n && a[r] > a[l])
+		if (r < n && a[l] < a[r])
 		{
 			largest = r;
 		}
@@ -28,16 +28,16 @@ namespace
 	}
 
 	template <typename type>
-	void  Heapify(type* a, size_t i, size_t n, bool (*function)(type, type))
+	void  Heapify(type* a, size_t i, size_t n, int (*function)(type, type))
 	{
 		size_t l = 2 * i + 1;
 		size_t r = 2 * i + 2;
 		size_t largest = i;
-		if (l < n && function(a[l], a[i]))
+		if (l < n && 0 < function(a[i], a[l]))
 		{
 			largest = l;
 		}
-		if (r < n && function(a[r], a[l]))
+		if (r < n && 0 < function(a[l], a[r]))
 		{
 			largest = r;
 		}
@@ -64,7 +64,7 @@ void  UltimaAPI::ISorters::HeapSort(type* a, size_t n)
 }
 
 template <typename type>
-void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, bool (*function)(type, type))
+void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, int (*function)(type, type))
 {
 	for (size_t i = n / 2 - 1; i >= 0; i--)
 	{
@@ -72,7 +72,7 @@ void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, bool (*function)(type, ty
 	}
 	for (size_t i = n - 1; i > 0; i--)
 	{
-		swap(a[0], a[i]);
+		swap(&a[0], &a[i]);
 		::Heapify(a, 0, i, function);
 	}
 }
