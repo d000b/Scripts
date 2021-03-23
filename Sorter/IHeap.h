@@ -33,6 +33,7 @@ namespace
 		size_t l = 2 * i + 1;
 		size_t r = 2 * i + 2;
 		size_t largest = i;
+
 		if (l < n && 0 < function(a[i], a[l]))
 		{
 			largest = l;
