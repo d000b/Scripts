@@ -7,26 +7,26 @@
 template <typename type>
 void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right)
 {
-	size_t i = left, j = right, 
-		pivot = s[(left + right) / 2];
+	size_t i = left, j = right;
+	type pivot = s[(left + right) / 2];
 	while (i <= j)
 	{
 		while (s[i] < pivot)  i++;
 		while (s[j] > pivot)  j--;
 		if (i <= j)
 		{
-			std::swap(&s[i], &s[j]);
+			swap(&s[i], &s[j]);
 		}
 		i++;
 		j--;
 	}
 	if (left < j)
 	{
-		quicksort(s, left, j);
+		QuickSort(s, left, j);
 	}
 	if (right > i)
 	{
-		quicksort(s, i, right);
+		QuickSort(s, i, right);
 	}
 }
 
@@ -35,26 +35,26 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool fun
 {
 	throw(L"TODO");
 
-	size_t i = left, j = right,
-		pivot = s[(left + right) / 2];
+	size_t i = left, j = right;
+	type pivot = s[(left + right) / 2];
 	while (i <= j)
 	{
 		while (s[i] < pivot)  i++;
 		while (s[j] > pivot)  j--;
 		if (i <= j)
 		{
-			std::swap(&s[i], &s[j]);
+			swap(&s[i], &s[j]);
 		}
 		i++;
 		j--;
 	}
 	if (left < j)
 	{
-		quicksort(s, left, j);
+		QuickSort(s, left, j);
 	}
 	if (right > i)
 	{
-		quicksort(s, i, right);
+		QuickSort(s, i, right);
 	}
 }
 

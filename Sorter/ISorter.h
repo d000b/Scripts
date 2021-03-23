@@ -15,15 +15,16 @@
 
 namespace UltimaAPI
 {
+	template <typename type>
+	void swap(type* a, type* b)
+	{
+		auto _ = *a;
+		*a = *b;
+		*b = _;
+	}
+
 	class ISorters
 	{
-		template <typename type>
-		void swap(type* a, type* b)
-		{
-			type* _ = *a;
-			*a = *b;
-			*b = *_;
-		}
 	public:
 #if defined(EXCEPTIONS) && EXCEPTIONS
 		class ExceptionISorter;
