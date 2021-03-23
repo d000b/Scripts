@@ -31,7 +31,7 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right)
 }
 
 template <typename type>
-void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool function(type, type))
+void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool (*function)(type, type))
 {
 	throw(L"TODO");
 

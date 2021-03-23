@@ -7,10 +7,9 @@
 template <typename type>
 void  UltimaAPI::ISorters::SelectionSort(type* s, size_t n)
 {
-	type min;
 	for (size_t i = 0; i < n - 1; i++)
 	{
-		min = i;
+		size_t min = i;
 		for (size_t j = i + 1; j < n; j++)
 			if (s[j] < s[min])
 			{
@@ -21,12 +20,11 @@ void  UltimaAPI::ISorters::SelectionSort(type* s, size_t n)
 }
 
 template <typename type>
-void  UltimaAPI::ISorters::SelectionSort(type* s, size_t n, bool function(type, type))
+void  UltimaAPI::ISorters::SelectionSort(type* s, size_t n, bool (*function)(type, type))
 {
-	type min;
 	for (size_t i = 0; i < n - 1; i++)
 	{
-		min = i;
+		size_t min = i;
 		for (size_t j = i + 1; j < n; j++)
 			if (function(s[j], s[min]))
 			{

@@ -28,7 +28,7 @@ namespace
 	}
 
 	template <typename type>
-	void  Heapify(type* a, size_t i, size_t n, bool function(type, type))
+	void  Heapify(type* a, size_t i, size_t n, bool (*function)(type, type))
 	{
 		size_t l = 2 * i + 1;
 		size_t r = 2 * i + 2;
@@ -64,7 +64,7 @@ void  UltimaAPI::ISorters::HeapSort(type* a, size_t n)
 }
 
 template <typename type>
-void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, bool function(type, type))
+void  UltimaAPI::ISorters::HeapSort(type* a, size_t n, bool (*function)(type, type))
 {
 	for (size_t i = n / 2 - 1; i >= 0; i--)
 	{
