@@ -23,6 +23,17 @@ namespace UltimaAPI
 		*b = _;
 	}
 
+	template <typename type>
+	int ForwardSort(type a, type b)
+	{
+		return (a < b) - (b < a);
+	}
+	template <typename type>
+	int BackwardSort(type a, type b)
+	{
+		return (b < a) - (a < b);
+	}
+
 	class ISorters
 	{
 	public:
@@ -32,11 +43,6 @@ namespace UltimaAPI
 
 		template <typename type>  class IBinaryTree;
 
-		template <typename type>  bool  more(type, type);
-		template <typename type>  bool  less(type, type);
-		template <typename type>  bool  more_equal(type, type);
-		template <typename type>  bool  less_equal(type, type);
-
 		template <typename type>  void  HeapSort(type*, size_t);
 		template <typename type>  void  InsertionSort(type*, size_t);
 		template <typename type>  bool  BinarySortedTree(IBinaryTree<type>*); // TODO
@@ -44,12 +50,12 @@ namespace UltimaAPI
 		template <typename type>  void  QuickSort(type*, size_t, size_t);
 		template <typename type>  void  SelectionSort(type*, size_t);
 
-		template <typename type>  void  HeapSort(type*, size_t, bool(type, type));
-		template <typename type>  void  InsertionSort(type*, size_t, bool(type, type));
-		template <typename type>  bool  BinarySortedTree(IBinaryTree<type>*, bool(type, type)); // TODO
-		template <typename type>  void  MergeSort(type*, size_t, bool(type, type));
-		template <typename type>  void  QuickSort(type*, size_t, size_t, bool(type, type)); // TODO
-		template <typename type>  void  SelectionSort(type*, size_t, bool(type, type)); // TODO
+		template <typename type>  void  HeapSort(type*, size_t, int(type, type));
+		template <typename type>  void  InsertionSort(type*, size_t, int(type, type));
+		template <typename type>  bool  BinarySortedTree(IBinaryTree<type>*, int(type, type)); // TODO
+		template <typename type>  void  MergeSort(type*, size_t, int(type, type));
+		template <typename type>  void  QuickSort(type*, size_t, size_t, int(type, type)); // TODO
+		template <typename type>  void  SelectionSort(type*, size_t, int(type, type)); // TODO
 	};
 }
 
@@ -62,23 +68,6 @@ public:
 	ExceptionISorter(const wchar_t* m, __int64 c) : Exception(m, c) { }
 };
 #endif
-
-template <typename type>  bool  UltimaAPI::ISorters::more(type a, type b)
-{
-	return a > b;
-}
-template <typename type>  bool  UltimaAPI::ISorters::less(type a, type b)
-{
-	return a < b;
-}
-template <typename type>  bool  UltimaAPI::ISorters::more_equal(type a, type b)
-{
-	return a >= b;
-}
-template <typename type>  bool  UltimaAPI::ISorters::less_equal(type a, type b)
-{
-	return a <= b;
-}
 
 #if defined(какая_то_хуета)
 int*  quick_power(int* a, int n) 

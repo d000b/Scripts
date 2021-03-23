@@ -50,12 +50,12 @@ namespace
 	}
 
 	template <typename type>
-	void merge(type* a, type* temp, size_t left, size_t mid, size_t right, bool (*function)(type, type))
+	void merge(type* a, type* temp, size_t left, size_t mid, size_t right, int (function)(type, type))
 	{
 		size_t i = left, j = mid, k = left;
 		while (i <= mid - 1 && j <= right)
 		{
-			if (function(a[i], a[j]))
+			if (function(a[i], a[j]) > 0)
 			{
 				temp[k++] = a[i++];
 			}
@@ -79,7 +79,7 @@ namespace
 	}
 
 	template <typename type>
-	void mergesort(type* a, type* temp, size_t left, size_t right, bool (*function)(type, type))
+	void mergesort(type* a, type* temp, size_t left, size_t right, int (function)(type, type))
 	{
 		size_t mid = left + (right - left) / 2;
 		if (right > left)
@@ -103,10 +103,8 @@ void  UltimaAPI::ISorters::MergeSort(type* a, size_t n)
 }
 
 template <typename type>
-void  UltimaAPI::ISorters::MergeSort(type* a, size_t n, bool (*function)(type, type))
+void  UltimaAPI::ISorters::MergeSort(type* a, size_t n, int (function)(type, type))
 {
-	// need rewrite ::mergesort (bool function was no works)
-	throw("bruh, that's no work, anythink");
 	type* temp;
 	if (temp = (type*)malloc(n * sizeof(type)))
 	{

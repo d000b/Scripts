@@ -31,7 +31,7 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right)
 }
 
 template <typename type>
-void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool (*function)(type, type))
+void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, int (*function)(type, type))
 {
 	throw(L"TODO");
 
@@ -39,8 +39,8 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool (*f
 	type pivot = s[(left + right) / 2];
 	while (i <= j)
 	{
-		while (s[i] < pivot)  i++;
-		while (s[j] > pivot)  j--;
+		while (s[i] < pivot)  i++; // ???
+		while (s[j] > pivot)  j--; // ???
 		if (i <= j)
 		{
 			swap(&s[i], &s[j]);
@@ -50,11 +50,11 @@ void UltimaAPI::ISorters::QuickSort(type* s, size_t left, size_t right, bool (*f
 	}
 	if (left < j)
 	{
-		QuickSort(s, left, j);
+		QuickSort(s, left, j, function);
 	}
 	if (right > i)
 	{
-		QuickSort(s, i, right);
+		QuickSort(s, i, right, function);
 	}
 }
 

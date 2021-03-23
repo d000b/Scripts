@@ -34,7 +34,7 @@ bool  UltimaAPI::ISorters::BinarySortedTree(IBinaryTree<type>* node)
 }
 
 template <typename type>
-bool  UltimaAPI::ISorters::BinarySortedTree(IBinaryTree<type>* node, bool function(type, type))
+bool  UltimaAPI::ISorters::BinarySortedTree(IBinaryTree<type>* node, int function(type, type))
 {
 	throw(L"TODO");
 
@@ -45,7 +45,7 @@ bool  UltimaAPI::ISorters::BinarySortedTree(IBinaryTree<type>* node, bool functi
 		if (!isBST(node->left))
 			return false;
 
-		if (prev != nullptr && function(node->data, prev->data))
+		if (prev != nullptr && function(node->data, prev->data) > 0)
 			return false;
 
 		prev = node;
