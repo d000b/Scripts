@@ -1,4 +1,4 @@
-#pragma once;
+#pragma once
 #include <string>
 #include <vector>
 
@@ -16,6 +16,13 @@ namespace UltimaAPI
 		size_t* = NULL,
 		bool = false,
 		bool = true);
+	bool TagContent(
+		std::wstring,
+		std::wstring,
+		size_t,
+		std::vector<std::wstring>&,
+		bool,
+		bool);
 	bool TagContent(
 		std::wstring,
 		std::wstring,
@@ -146,6 +153,82 @@ std::wstring	UltimaAPI::TagContent(std::wstring source, std::wstring tag, size_t
 		return matches[0];
 	}
 	else return L"";
+}
+
+bool			UltimaAPI::TagContent(std::wstring source, std::wstring tag, size_t index, std::vector<std::wstring>& ret, bool UnclosingTag, bool DeleteTag)
+{
+	size_t find = 0;
+	size_t rfind = 0;
+	size_t counts = 0;
+	wchar_t br;
+	const wchar_t* tag_breaks_l = L"<";
+	const wchar_t* tag_breaks_r = L"> ";
+	//	const wchar_t* tag_breaks_l = L"[{<(";
+	//	const wchar_t* tag_breaks_r = L"]}>) ";
+	std::wstring raw_tag = TagFind(tag, &br, tag_breaks_l, tag_breaks_r);
+	while (true)
+	{
+		size_t f = (find = source.find(tag, rfind)) + tag.size();
+		if (find == std::wstring::npos)
+			break;
+		rfind = f + 1;
+		if (index != -1 && index > counts)
+		{
+			counts++;
+			continue;
+		}
+		size_t count = 1;
+		if (UnclosingTag)
+		{
+			while (true)
+			{
+				f = source.find_first_of(L"<>", f);
+				std::wcout << f << L"\t";
+				if (source[f] == L'<')
+					count++;
+				else count--;
+				if (count == 0 || f == std::wstring::npos)
+					break;
+				f++;
+			}
+		}
+		else
+		{
+			while (true)
+			{
+				f = source.find(raw_tag, f);
+				if (f == std::wstring::npos)
+					break;
+				const wchar_t ch = source[f - 1];
+				if (ch == br)
+					count++;
+				else if (ch == L'/' && source[f - 2] == br)
+					count--;
+				if (count == 0)
+					break;
+				f++;
+			}
+		}
+		size_t _s;
+		size_t _e;
+		if (DeleteTag)
+		{
+			_s = find + tag.size();
+			_e = f - 2;
+		}
+		else
+		{
+			_s = find;
+			_e = f + raw_tag.size() + 1;
+		}
+		rfind = _e;
+		ret.push_back(source.substr(_s, _e - _s));
+		if (index != -1)
+		{
+			return true;
+		}
+	}
+	return ret.size();
 }
 
 bool			UltimaAPI::TagContent(std::wstring source, std::wstring tag, size_t index_start, size_t index_end, std::vector<std::wstring>* ret, bool UnclosingTag, bool DeleteTag, short expression);

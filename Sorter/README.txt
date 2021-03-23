@@ -1,0 +1,3 @@
+Standat sorters for types...
+
+(needed rewrite README texts)

@@ -1,5 +1,5 @@
 To ADD:
-	TriangleTable (Simmetric 2D Matrix (the other, lower symmetrical upper half of the table is simply deleted and is not written to memory))
+	TriangularMatrix (Simmetric 2D Matrix (the other, lower symmetrical upper half of the table is simply deleted and is not written to memory))
 	BasicDestructor
 	CircularVector
 	Filter Bloom's

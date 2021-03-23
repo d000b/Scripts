@@ -1,0 +1,1 @@
+analogue of std :: exception. 
