@@ -38,7 +38,7 @@ namespace
 	}
 
 	template <typename type>
-	void mergesort(type* a, type temp, size_t left, size_t right)
+	void mergesort(type* a, type* temp, size_t left, size_t right)
 	{
 		size_t mid = left + (right - left) / 2;
 		if (right > left)
@@ -79,7 +79,7 @@ namespace
 	}
 
 	template <typename type>
-	void mergesort(type* a, type temp, size_t left, size_t right, bool function(type, type))
+	void mergesort(type* a, type* temp, size_t left, size_t right, bool function(type, type))
 	{
 		size_t mid = left + (right - left) / 2;
 		if (right > left)
