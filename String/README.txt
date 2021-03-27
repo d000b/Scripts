@@ -1,1 +1,0 @@
-Counts links and will not delete pointers while the number of link > 0
