@@ -136,7 +136,7 @@ public:
 		allocated = used = 0;
 		if (start)
 			delete[] start;
-		last = nullptr;
+		last = start = nullptr;
 	}
 	decltype(auto) reserve(size_t sz) noexcept
 	{
