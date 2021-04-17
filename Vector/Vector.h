@@ -40,8 +40,7 @@ private:
 				{
 					used = used > al ? al : used;
 				}
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(start) type[al]) + used;
-				allocated = al;
+				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(start) type[allocated = al]) + used;
 			}
 		}
 		else free();
