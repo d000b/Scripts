@@ -52,16 +52,16 @@ public:
 		if (used >= allocated)
 			allocate(allocated * mul_alloc + 1);
 		else if (used > 0)
-			reinterpret_cast<type*&>(last)++;
+			++reinterpret_cast<type*&>(last);
 		*reinterpret_cast<type*>(last) = val;
-		used++;
+		++used;
 	}
 	decltype(auto) pop_back() noexcept
 	{
 		if (used > 0)
 		{
-			reinterpret_cast<type*&>(last)--;
-			used--;
+			--reinterpret_cast<type*&>(last);
+			--used;
 		}
 	}
 	decltype(auto) insert(size_t place, type val) noexcept
@@ -108,11 +108,6 @@ public:
 	{
 		return *reinterpret_cast<type*>(last);
 	}
-//  I don't remember how I wrote it. Understand and refine this as it causes problems!
-//	decltype(auto) right() // not safe func! After using check allocated size (used > 0)
-//	{
-//		return (used > 0 ? *(reinterpret_cast<type*&>(last)--) : *(reinterpret_cast<type*&>(start)));
-//	}
 	decltype(auto) capacity() noexcept
 	{
 		return allocated;
@@ -148,7 +143,7 @@ public:
 	}
 	decltype(auto) rate() noexcept
 	{
-		return double& (mul_alloc);
+		return double&(mul_alloc);
 	}
 	decltype(auto) max_size() noexcept
 	{
@@ -170,7 +165,7 @@ public:
 	}
 	decltype(auto) end() noexcept
 	{
-		return iterator(reinterpret_cast<type*>(last));
+		return iterator(reinterpret_cast<type*>(start) + used);
 	}
 	decltype(auto) cbegin() const noexcept
 	{
@@ -178,7 +173,7 @@ public:
 	}
 	decltype(auto) cend() const noexcept
 	{
-		return const_iterator(reinterpret_cast<type*>(last));
+		return const_iterator(reinterpret_cast<type*>(start) + used);
 	}
 	decltype(auto) rbegin() noexcept
 	{
