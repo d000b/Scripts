@@ -27,7 +27,7 @@ public:
 private:
 	decltype(auto) allocate(size_t al) noexcept
 	{
-		if (al > 0)
+		if (al)
 		{
 			if (!start)
 			{
@@ -36,7 +36,7 @@ private:
 			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
-				if (al < allocated);
+				if (al < allocated)
 				{
 					used = used > al ? al : used;
 				}
