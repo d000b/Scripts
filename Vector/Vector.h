@@ -36,11 +36,14 @@ private:
 			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
+				void* block;
 				if (al < allocated)
 				{
 					used = used > al ? al : used;
 				}
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(new(start) type[allocated = al]) + used;
+				memcpy(block = new type[allocated = al], start, used * sizeof(type));
+				delete[] start;
+				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = block) + used;
 			}
 		}
 		else free();
