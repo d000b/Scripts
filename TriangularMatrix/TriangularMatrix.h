@@ -28,10 +28,10 @@ public:
 	};
 
 private:
+	flags  bits;
 	size_t width;
 	size_t allocated;
-	void* start;
-	flags bits;
+	void*  start;
 
 	decltype(auto) allocate(size_t al)
 	{
@@ -43,6 +43,7 @@ private:
 			}
 			else if (al > allocated)
 			{
+				// need to fix: example in Vector
 				new(start) type[allocated = al];
 			}
 		}
@@ -54,6 +55,7 @@ public:
 		allocated = width = 0;
 		if (start)
 			delete[] start;
+		start = nullptr;
 	}
 
 	decltype(auto) operator[](size_t i)
