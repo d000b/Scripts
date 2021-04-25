@@ -8,7 +8,6 @@
 namespace UltimaAPI
 {
 	template <typename type>  class Vector;
-//	template <typename type>  class MultidimensionalVector;
 }
 
 template <typename type>
