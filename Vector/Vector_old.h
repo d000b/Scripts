@@ -17,7 +17,7 @@ class UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	void* start, *last;
+	type* start, *last;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
@@ -42,7 +42,7 @@ private:
 				}
 				memcpy(block = new type[allocated = al], start, used * sizeof(type));
 				delete[] start;
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = block) + used;
+				last = (start = block) + used;
 			}
 		}
 		else free();
@@ -53,15 +53,15 @@ public:
 		if (used >= allocated)
 			allocate(allocated * mul_alloc + 1);
 		else if (used > 0)
-			++reinterpret_cast<type*&>(last);
-		*reinterpret_cast<type*>(last) = val;
+			++last;
+		*last = val;
 		++used;
 	}
 	decltype(auto) pop_back() noexcept
 	{
 		if (used > 0)
 		{
-			--reinterpret_cast<type*&>(last);
+			--last;
 			--used;
 		}
 	}
@@ -83,9 +83,9 @@ public:
 	{
 		if (place + sz >= allocated)
 			allocate((used = place + sz) * mul_alloc + 1);
-		memcpy(reinterpret_cast<type*&>(start) + place, val, sz);
+		memcpy(start + place, val, sz * sizeof(type));
 		if (place + sz > used)
-			last = reinterpret_cast<type*>(start) + used;
+			last = start + used;
 	}
 	decltype(auto) size() noexcept
 	{
@@ -107,7 +107,7 @@ public:
 	}
 	decltype(auto) back() noexcept
 	{
-		return *reinterpret_cast<type*>(last);
+		return *last;
 	}
 	decltype(auto) capacity() noexcept
 	{
@@ -115,7 +115,7 @@ public:
 	}
 	decltype(auto) data() noexcept
 	{
-		return reinterpret_cast<type*>(start);
+		return start;
 	}
 	decltype(auto) empty() noexcept
 	{
@@ -124,7 +124,7 @@ public:
 	decltype(auto) resize(size_t sz) noexcept
 	{
 		if ((used = sz) <= allocated)
-			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start) + used;
+			last = start + used;
 		else allocate(used);
 	}
 	decltype(auto) free() noexcept
@@ -140,7 +140,7 @@ public:
 	}
 	decltype(auto) rate(double val) noexcept
 	{
-		mul_alloc = val;
+		return double&(mul_alloc = val);
 	}
 	decltype(auto) rate() noexcept
 	{
@@ -162,19 +162,19 @@ public:
 
 	decltype(auto) begin() noexcept
 	{
-		return iterator(reinterpret_cast<type*>(start));
+		return iterator(start);
 	}
 	decltype(auto) end() noexcept
 	{
-		return iterator(reinterpret_cast<type*>(start) + used);
+		return iterator(start + used);
 	}
 	decltype(auto) cbegin() const noexcept
 	{
-		return const_iterator(reinterpret_cast<type*>(start));
+		return const_iterator(start);
 	}
 	decltype(auto) cend() const noexcept
 	{
-		return const_iterator(reinterpret_cast<type*>(start) + used);
+		return const_iterator(start + used);
 	}
 	decltype(auto) rbegin() noexcept
 	{
@@ -238,9 +238,9 @@ public:
 		if (i >= used)
 		{
 			used = i + 1;
-			last = reinterpret_cast<type*&>(start) + used;
+			last = start + used;
 		}
-		return reinterpret_cast<type*&>(start)[i];
+		return start[i];
 	}
 
 	Vector(std::initializer_list<type> v) noexcept

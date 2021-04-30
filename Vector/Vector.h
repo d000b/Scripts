@@ -2,6 +2,7 @@
 
 #include <memory.h>
 #include <initializer_list>
+#include <variant>
 
 #include "../BasicIterator/BasicIterator.h"
 
@@ -14,125 +15,274 @@ template <typename type>
 class UltimaAPI::Vector
 {
 	double mul_alloc = 1.6487; // sqrt(e)
+	
+	__forceinline static constexpr const size_t	max_bytes()
+	{
+		return sizeof(pointer) - sizeof(container::use);
+	}
 
-	size_t used;
-	size_t allocated;
-	void* start, *last;
+	enum	config : __int8
+	{
+		bits_clear = 0,
+
+		bit_init	= 1 << 0,
+		bit_always_using_pointer = 1 << 1,
+
+		bit_pointer	= 1 << 4,
+		bit_needed_swap = 1 << 5,
+	};
+	struct	pointer
+	{
+		size_t used;
+		size_t allocated;
+		void* start, *last;
+	};
+	struct	container
+	{
+		__forceinline decltype(auto)	used() { return use; }
+		__forceinline decltype(auto)	start() { return reinterpret_cast<type*>(&container); }
+		__forceinline decltype(auto)	last() { return reinterpret_cast<type*>(&container) + use; }
+
+		decltype(auto)	right()
+		{ 
+			if (use > 0)
+				return reinterpret_cast<type*>(&container) + use - 1;
+			else return reinterpret_cast<type*>(&container);
+		}
+
+		unsigned __int8	use;
+		unsigned __int8	container[max_bytes()];
+	};
+	union 
+	{
+		pointer p;
+		container c;
+	};
+	__int8 cfg;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 private:
+	__forceinline static constexpr const size_t	max_elements()
+	{
+		return max_bytes() / sizeof(type);
+	}
+
 	decltype(auto) allocate(size_t al) noexcept
 	{
 		if (al)
 		{
-			if (!start)
-			{
-				last = start = new type[allocated = al];
-			}
-			else if (al == allocated); // maybe adding code to do something!
-			else
-			{
-				void* block;
-				if (al < allocated)
-				{
-					used = used > al ? al : used;
-				}
-				memcpy(block = new type[allocated = al], start, used * sizeof(type));
-				delete[] start;
-				reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start = block) + used;
-			}
+			if (swaped(al))
+				pointer(al);
 		}
 		else free();
+	}
+
+	decltype(auto) swaped(size_t al)
+	{
+		if (cfg & config::bit_pointer)
+		{
+			if (max_elements() >= al && p.start)
+			{
+				void* block;
+				memcpy(c.start(), block = p.start, (c.use = p.used > al ? al : p.used) * sizeof(type));
+				delete[] block;
+				cfg &= ~config::bit_pointer;
+				return false;
+			}
+			else return true;
+		}
+		else
+		{
+			if (max_elements() < al)
+			{
+				void* block;
+				p.start = memcpy(block = new type[p.allocated = al], c.start(), (p.used = c.use) * sizeof(type));
+				reinterpret_cast<type*&>(p.last) = reinterpret_cast<type*>(p.start) + p.used;
+				cfg |= config::bit_pointer;
+				return false;
+			}
+			else return true;
+		}
+	}
+	decltype(auto) pointer(size_t al)
+	{
+		if (!p.start)
+		{
+			p.last = p.start = new type[p.allocated = al];
+		}
+		else if (al == p.allocated); // maybe adding code to do something!
+		else
+		{
+			void* block;
+			memcpy(block = new type[p.allocated = al], p.start, (p.used = p.used > al ? al : p.used) * sizeof(type));
+			delete[] p.start;
+			reinterpret_cast<type*&>(p.last) = reinterpret_cast<type*>(p.start = block) + p.used;
+		}
+		cfg |= config::bit_pointer;
 	}
 public:
 	decltype(auto) push_back(type val) noexcept
 	{
-		if (used >= allocated)
-			allocate(allocated * mul_alloc + 1);
-		else if (used > 0)
-			++reinterpret_cast<type*&>(last);
-		*reinterpret_cast<type*>(last) = val;
-		++used;
+		if (cfg & config::bit_pointer)
+		{  
+			if (p.used >= max_elements())
+				allocate(p.allocated * mul_alloc + 1);
+		}
+		else if (c.use >= max_elements())
+			allocate(c.use * mul_alloc + 1);
+
+		if (cfg & config::bit_pointer)
+		{
+			if (p.used > 0)
+				++reinterpret_cast<type*&>(p.last);
+			*reinterpret_cast<type*>(p.last) = val;
+			++p.used;
+		}
+		else
+		{
+			*reinterpret_cast<type*>(c.last()) = val;
+			++c.use;
+		}
 	}
 	decltype(auto) pop_back() noexcept
 	{
-		if (used > 0)
+		if (cfg & config::bit_pointer)
 		{
-			--reinterpret_cast<type*&>(last);
-			--used;
+			if (p.used > 0)
+			{
+				--reinterpret_cast<type*&>(p.last);
+				--p.used;
+			}
 		}
+		else if (c.use > 0)
+			--c.use;
 	}
 	decltype(auto) insert(size_t place, type val) noexcept
 	{
-		if (place >= allocated)
+		if (cfg & config::bit_pointer)
 		{
-			used = place;
-			allocate(place * mul_alloc + 1);
-			*last = val;
+			if (place >= p.allocated)
+			{
+				p.used = place;
+				allocate(place * mul_alloc + 1);
+				*p.last = val;
+			}
+			else if (place > p.used)
+			{
+				*(p.last = p.start + (p.used = place)) = val;
+			}
+			else p.start[place] = val;
 		}
-		else if (place > used)
+		else
 		{
-			*(last = start + (used = place)) = val;
+			if (place >= max_elements())
+			{
+				p.used = place;
+				allocate(place * mul_alloc + 1);
+				*p.last = val;
+			}
+			else if (place > c.use)
+			{
+				c.use = place;
+				*c.last() = val;
+			}
+			else c.start()[place] = val;
 		}
-		else start[place] = val;
 	}
-	decltype(auto) insert(size_t place, type* val, size_t sz) noexcept
+	decltype(auto) insert(size_t place, type* val, size_t count) noexcept
 	{
-		if (place + sz >= allocated)
-			allocate((used = place + sz) * mul_alloc + 1);
-		memcpy(reinterpret_cast<type*&>(start) + place, val, sz);
-		if (place + sz > used)
-			last = reinterpret_cast<type*>(start) + used;
+		if (cfg & config::bit_pointer)
+		{
+			if (place + count >= p.allocated)
+				allocate((p.used = place + count) * mul_alloc + 1);
+		}
+		else if (place + count >= max_elements())
+			allocate((p.used = place + count) * mul_alloc + 1);
+
+		if (cfg & config::bit_pointer)
+		{
+			memcpy(reinterpret_cast<type*&>(p.start) + place, val, count * sizeof(type));
+			if (place + count > p.used)
+				p.last = reinterpret_cast<type*>(p.start) + c.used;
+		}
+		else
+		{
+			memcpy(p.start() + place, val, count * sizeof(type));
+			c.use = place + count > c.use ? place + count : c.use;
+		}
 	}
 	decltype(auto) size() noexcept
 	{
-		return used;
+		if (cfg & config::bit_pointer)
+			return p.used;
+		else return size_t(c.use);
 	}
 	decltype(auto) copy(Vector* v) noexcept
 	{
-		v->allocate(allocated);
-		if (used)
+		if (cfg & config::bit_pointer)
 		{
-			v->used = used;
-			memcpy(v->start, start, used * sizeof(type));
+			v->allocate(p.allocated);
+			if (p.used)
+				memcpy(v->p.start, p.start, (v->p.used = p.used) * sizeof(type));
 		}
+		else if (c.use)
+			memcpy(v->c.start(), c.start(), (v->c.use = c.use) * sizeof(type));
 	}
 	decltype(auto) clear() noexcept
 	{
-		last = start;
-		used = 0;
+		if (cfg & config::bit_pointer)
+		{
+			p.last = p.start;
+			p.used = 0;
+		}
+		else c.use = 0;
 	}
 	decltype(auto) back() noexcept
 	{
-		return *reinterpret_cast<type*>(last);
+		if (cfg & config::bit_pointer)
+			return *reinterpret_cast<type*>(p.last);
+		else return *c.last();
 	}
 	decltype(auto) capacity() noexcept
 	{
-		return allocated;
+		if (cfg & config::bit_pointer)
+			return p.allocated;
+		else max_elements();
 	}
 	decltype(auto) data() noexcept
 	{
-		return reinterpret_cast<type*>(start);
+		if (cfg & config::bit_pointer)
+			return reinterpret_cast<type*>(p.start);
+		else return c.start();
 	}
 	decltype(auto) empty() noexcept
 	{
-		return used == 0;
+		if (cfg & config::bit_pointer)
+			return p.used == 0;
+		else return c.use == 0;
 	}
 	decltype(auto) resize(size_t sz) noexcept
 	{
-		if ((used = sz) <= allocated)
-			reinterpret_cast<type*&>(last) = reinterpret_cast<type*>(start) + used;
-		else allocate(used);
+		if (!(cfg & config::bit_pointer) && sz > max_elements())
+			allocate(sz);
+
+		if (cfg & config::bit_pointer)
+		{
+			if ((p.used = sz) <= p.allocated)
+				reinterpret_cast<type*&>(p.last) = reinterpret_cast<type*>(p.start) + p.used;
+			else allocate(p.used);
+		}
+		else c.use = sz;
 	}
 	decltype(auto) free() noexcept
 	{
-		allocated = used = 0;
-		if (start)
-			delete[] start;
-		last = start = nullptr;
+		p.allocated = p.used = 0;
+		if (cfg & config::bit_pointer && p.start)
+			delete[] p.start;
+		p.last = p.start = nullptr;
 	}
 	decltype(auto) reserve(size_t sz) noexcept
 	{
@@ -140,15 +290,15 @@ public:
 	}
 	decltype(auto) rate(double val) noexcept
 	{
-		mul_alloc = val;
+		return double&&(mul_alloc = val);
 	}
 	decltype(auto) rate() noexcept
 	{
-		return double&(mul_alloc);
+		return double&&(mul_alloc);
 	}
 	decltype(auto) max_size() noexcept
 	{
-		return (1 << (8 * sizeof(allocated))) / sizeof(type);
+		return (1 << (8 * sizeof(p.allocated))) / sizeof(type);
 	}
 	decltype(auto) size_of() noexcept
 	{
@@ -156,25 +306,33 @@ public:
 	}
 	decltype(auto) shrink_to_fit() noexcept
 	{
-		if (used < allocated)
-			allocate(used);
+		if (cfg & config::bit_pointer && p.used < p.allocated)
+			allocate(p.used);
 	}
 
 	decltype(auto) begin() noexcept
 	{
-		return iterator(reinterpret_cast<type*>(start));
+		if (cfg & config::bit_pointer)
+			return iterator(reinterpret_cast<type*>(p.start));
+		else return iterator(c.start());
 	}
 	decltype(auto) end() noexcept
 	{
-		return iterator(reinterpret_cast<type*>(start) + used);
+		if (cfg & config::bit_pointer)
+			return iterator(reinterpret_cast<type*>(p.start) + p.used);
+		else return iterator(c.last());
 	}
 	decltype(auto) cbegin() const noexcept
 	{
-		return const_iterator(reinterpret_cast<type*>(start));
+		if (cfg & config::bit_pointer)
+			return const_iterator(reinterpret_cast<type*>(p.start));
+		else return const_iterator(c.start());
 	}
 	decltype(auto) cend() const noexcept
 	{
-		return const_iterator(reinterpret_cast<type*>(start) + used);
+		if (cfg & config::bit_pointer)
+			return const_iterator(reinterpret_cast<type*>(p.start) + p.used);
+		else return const_iterator(c.last());
 	}
 	decltype(auto) rbegin() noexcept
 	{
@@ -195,9 +353,13 @@ public:
 
 	decltype(auto) operator()(std::initializer_list<type> v) noexcept
 	{
-		start = nullptr;
-		allocate(used = v.size());
-		memcpy(start, v.begin(), used * sizeof(type));
+		if (v.size() > max_elements())
+		{
+			p.start = nullptr;
+			allocate(p.used = v.size());
+			memcpy(p.start, v.begin(), p.used * sizeof(type));
+		}
+		else memcpy(c.start(), v.begin(), (c.use = v.size()) * sizeof(type));
 	}
 	decltype(auto) operator~() noexcept
 	{
@@ -209,63 +371,174 @@ public:
 	}
 	decltype(auto) operator+=(Vector v) noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator+=(Vector& v) noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator+=(Vector&& v) noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator+=(const Vector v) const  noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator+=(const Vector& v) const noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator+=(const Vector&& v) const noexcept
 	{
-		insert(used, v.start, v.used);
+		void* s;
+		size_t t;
+		if (v.cfg & config::bit_pointer)
+		{
+			t = v.p.used;
+			s = v.p.start;
+		}
+		else
+		{
+			t = v.c.use;
+			s = v.c.start();
+		}
+
+		if (cfg & config::bit_pointer)
+			insert(p.used, s, t);
+		else insert(c.use, s, t);
 	}
 	decltype(auto) operator[](size_t i) noexcept
 	{
-		if (i >= allocated)
+		if (cfg & config::bit_pointer && i >= p.allocated || !(cfg & config::bit_pointer) && i >= max_elements())
 			allocate(i * mul_alloc + 1);
-		if (i >= used)
+		if (cfg & config::bit_pointer)
 		{
-			used = i + 1;
-			last = reinterpret_cast<type*&>(start) + used;
+			if (i >= p.used)
+			{
+				p.used = i + 1;
+				p.last = reinterpret_cast<type*&>(p.start) + p.used;
+			}
+			return reinterpret_cast<type*&>(p.start)[i];
 		}
-		return reinterpret_cast<type*&>(start)[i];
+		else
+		{
+			c.use = i >= c.use ? i + 1 : c.use;
+			return c.start()[i];
+		}
 	}
 
 	Vector(std::initializer_list<type> v) noexcept
 	{
+		cfg = config::bit_init;
+		if (!max_elements())
+			cfg |= config::bit_always_using_pointer | config::bit_pointer;
 		this->operator()(v);
 	}
 	Vector() noexcept
 	{
-		last = start = nullptr;
-		allocated = used = 0;
+		cfg = config::bits_clear;
+		if (!max_elements())
+			cfg |= config::bit_always_using_pointer | config::bit_pointer;
+		p.last = p.start = nullptr;
+		p.allocated = p.used = 0;
 	}
 	Vector(size_t sz) noexcept
 	{
-		used = 0;
-		start = nullptr;
+		p.used = 0;
+		p.start = nullptr;
+		cfg = config::bit_init;
+		if (!max_elements())
+			cfg |= config::bit_always_using_pointer | config::bit_pointer;
 		allocate(sz);
 	}
 	Vector(size_t sz, type* ray) noexcept
 	{
-		used = 0;
-		start = nullptr;
+		p.used = 0;
+		p.start = nullptr;
+		cfg = config::bit_init;
+		if (!max_elements())
+			cfg |= config::bit_always_using_pointer | config::bit_pointer;
 		insert(0, ray, sz);
 	}
 	Vector(Vector& v) noexcept
 	{
+		cfg = config::bit_init;
 		v.copy(this);
 	}
 
