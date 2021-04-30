@@ -258,6 +258,10 @@ public:
 			return reinterpret_cast<type*>(p.start);
 		else return c.start();
 	}
+	decltype(auto) swap(Vector& v) noexcept
+	{
+		std::swap(*this, v);
+	}
 	decltype(auto) empty() noexcept
 	{
 		if (cfg & config::bit_pointer)
@@ -364,6 +368,10 @@ public:
 	decltype(auto) operator~() noexcept
 	{
 		free();
+	}
+	decltype(auto) operator^=(Vector& v) noexcept
+	{
+		swap(v);
 	}
 	decltype(auto) operator+=(type c) noexcept
 	{

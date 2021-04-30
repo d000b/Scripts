@@ -117,6 +117,10 @@ public:
 	{
 		return start;
 	}
+	decltype(auto) swap(Vector& v) noexcept
+	{
+		std::swap(*this, v);
+	}
 	decltype(auto) empty() noexcept
 	{
 		return used == 0;
@@ -202,6 +206,10 @@ public:
 	decltype(auto) operator~() noexcept
 	{
 		free();
+	}
+	decltype(auto) operator^=(Vector& v) noexcept
+	{
+		swap(v);
 	}
 	decltype(auto) operator+=(type c) noexcept
 	{
