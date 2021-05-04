@@ -39,9 +39,9 @@ class UltimaAPI::Vector
 	};
 	struct	container
 	{
-		__forceinline decltype(auto)	used() { return use; }
-		__forceinline decltype(auto)	start() { return reinterpret_cast<type*>(&container); }
-		__forceinline decltype(auto)	last() { return reinterpret_cast<type*>(&container) + use; }
+		__forceinline decltype(auto)	used()	{ return use; }
+		__forceinline decltype(auto)	start()	{ return reinterpret_cast<type*>(&container); }
+		__forceinline decltype(auto)	last()	{ return reinterpret_cast<type*>(&container) + use; }
 
 		decltype(auto)	right()
 		{ 
@@ -99,8 +99,8 @@ private:
 			if (max_elements() < al)
 			{
 				void* block;
-				p.start = memcpy(block = new type[p.allocated = al], c.start(), (p.used = c.use) * sizeof(type));
-				reinterpret_cast<type*&>(p.last) = reinterpret_cast<type*>(p.start) + p.used;
+				p.start = memcpy(block = new type[p.allocated = al], c.start(), c.use * sizeof(type));
+				reinterpret_cast<type*&>(p.last) = reinterpret_cast<type*>(p.start) + (p.used = c.use);
 				cfg |= config::bit_pointer;
 				return false;
 			}
@@ -128,7 +128,7 @@ public:
 	{
 		if (cfg & config::bit_pointer)
 		{  
-			if (p.used >= max_elements())
+			if (p.used >= p.allocated)
 				allocate(p.allocated * mul_alloc + 1);
 		}
 		else if (c.use >= max_elements())
@@ -166,8 +166,7 @@ public:
 		{
 			if (place >= p.allocated)
 			{
-				p.used = place;
-				allocate(place * mul_alloc + 1);
+				allocate((p.used = place) * mul_alloc + 1);
 				*p.last = val;
 			}
 			else if (place > p.used)
@@ -180,8 +179,7 @@ public:
 		{
 			if (place >= max_elements())
 			{
-				p.used = place;
-				allocate(place * mul_alloc + 1);
+				allocate((p.used = place) * mul_alloc + 1);
 				*p.last = val;
 			}
 			else if (place > c.use)
@@ -205,13 +203,13 @@ public:
 		if (cfg & config::bit_pointer)
 		{
 			memcpy(reinterpret_cast<type*&>(p.start) + place, val, count * sizeof(type));
-			if (place + count > p.used)
-				p.last = reinterpret_cast<type*>(p.start) + c.used;
+			p.last = reinterpret_cast<type*>(p.start) + p.used;
 		}
 		else
 		{
 			memcpy(p.start() + place, val, count * sizeof(type));
-			c.use = place + count > c.use ? place + count : c.use;
+			if (place + count > c.use)
+				c.use = place + count;
 		}
 	}
 	decltype(auto) size() noexcept
