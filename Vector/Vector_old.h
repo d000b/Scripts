@@ -35,12 +35,8 @@ private:
 			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
-				void* block;
-				if (al < allocated)
-				{
-					used = used > al ? al : used;
-				}
-				memcpy(block = new type[allocated = al], start, used * sizeof(type));
+				type* block;
+				memcpy(block = new type[allocated = al], start, (used = used > al ? al : used) * sizeof(type));
 				delete[] start;
 				last = (start = block) + used;
 			}
@@ -79,13 +75,13 @@ public:
 		}
 		else start[place] = val;
 	}
-	decltype(auto) insert(size_t place, type* val, size_t sz) noexcept
+	decltype(auto) insert(size_t place, type* val, size_t count) noexcept
 	{
-		if (place + sz >= allocated)
-			allocate((used = place + sz) * mul_alloc + 1);
-		memcpy(start + place, val, sz * sizeof(type));
-		if (place + sz > used)
-			last = start + used;
+		if (place + count >= allocated)
+			allocate((used = place + count) * mul_alloc + 1);
+		else if (place + count > used)
+			last = start + (used = place + count);
+		memcpy(start + place, val, count * sizeof(type));
 	}
 	decltype(auto) size() noexcept
 	{
