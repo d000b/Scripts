@@ -2,7 +2,6 @@
 
 #include <memory.h>
 #include <initializer_list>
-#include <variant>
 
 #include "../BasicIterator/BasicIterator.h"
 
