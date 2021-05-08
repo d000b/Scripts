@@ -64,6 +64,8 @@ public:
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 private:
+	static_assert(!(sizeof(Vector::pointer) - sizeof(Vector::container)), L"Unequal memory structure used");
+
 	__forceinline static constexpr const size_t	max_elements()
 	{
 		return max_bytes() / sizeof(type);
