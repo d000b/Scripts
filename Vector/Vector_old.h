@@ -47,7 +47,7 @@ public:
 	decltype(auto) push_back(type val) noexcept
 	{
 		if (used >= allocated)
-			allocate(allocated * mul_alloc + 1);
+			allocate(alloc_step());
 		else if (used > 0)
 			++last;
 		*last = val;
@@ -65,8 +65,7 @@ public:
 	{
 		if (place >= allocated)
 		{
-			used = place;
-			allocate(place * mul_alloc + 1);
+			allocate((used = place) * mul_alloc + 1);
 			*last = val;
 		}
 		else if (place > used)
@@ -87,7 +86,15 @@ public:
 	{
 		return used;
 	}
-	decltype(auto) copy(Vector* v) noexcept
+	decltype(auto) capacity() noexcept
+	{
+		return allocated;
+	}
+	decltype(auto) alloc_step()
+	{
+		return size_t(allocated * mul_alloc + 1);
+	}
+	decltype(auto) copy(Vector<type>* v) noexcept
 	{
 		v->allocate(allocated);
 		if (used)
@@ -105,15 +112,11 @@ public:
 	{
 		return *last;
 	}
-	decltype(auto) capacity() noexcept
-	{
-		return allocated;
-	}
 	decltype(auto) data() noexcept
 	{
 		return start;
 	}
-	decltype(auto) swap(Vector& v) noexcept
+	decltype(auto) swap(Vector<type>& v) noexcept
 	{
 		std::swap(*this, v);
 	}
@@ -223,15 +226,15 @@ public:
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Vector v) const  noexcept
+	decltype(auto) operator+=(const Vector<type> v) const  noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Vector& v) const noexcept
+	decltype(auto) operator+=(const Vector<type>& v) const noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Vector&& v) const noexcept
+	decltype(auto) operator+=(const Vector<type>&& v) const noexcept
 	{
 		insert(used, v.start, v.used);
 	}
@@ -268,7 +271,7 @@ public:
 		start = nullptr;
 		insert(0, ray, sz);
 	}
-	Vector(Vector& v) noexcept
+	Vector(Vector<type>& v) noexcept
 	{
 		v.copy(this);
 	}
