@@ -219,7 +219,7 @@ public:
 			return p.used;
 		else return size_t(c.use);
 	}
-	decltype(auto) copy(Vector* v) noexcept
+	decltype(auto) copy(Vector<type>* v) noexcept
 	{
 		if (cfg & config::bit_pointer)
 		{
@@ -257,7 +257,7 @@ public:
 			return reinterpret_cast<type*>(p.start);
 		else return c.start();
 	}
-	decltype(auto) swap(Vector& v) noexcept
+	decltype(auto) swap(Vector<type>& v) noexcept
 	{
 		std::swap(*this, v);
 	}
@@ -368,7 +368,7 @@ public:
 	{
 		free();
 	}
-	decltype(auto) operator^=(Vector& v) noexcept
+	decltype(auto) operator^=(Vector<type>& v) noexcept
 	{
 		swap(v);
 	}
@@ -376,7 +376,7 @@ public:
 	{
 		push_back(c);
 	}
-	decltype(auto) operator+=(Vector v) noexcept
+	decltype(auto) operator+=(Vector<type> v) noexcept
 	{
 		void* s;
 		size_t t;
@@ -395,7 +395,7 @@ public:
 			insert(p.used, s, t);
 		else insert(c.use, s, t);
 	}
-	decltype(auto) operator+=(Vector& v) noexcept
+	decltype(auto) operator+=(Vector<type>& v) noexcept
 	{
 		void* s;
 		size_t t;
@@ -414,7 +414,7 @@ public:
 			insert(p.used, s, t);
 		else insert(c.use, s, t);
 	}
-	decltype(auto) operator+=(Vector&& v) noexcept
+	decltype(auto) operator+=(Vector<type>&& v) noexcept
 	{
 		void* s;
 		size_t t;
@@ -433,7 +433,7 @@ public:
 			insert(p.used, s, t);
 		else insert(c.use, s, t);
 	}
-	decltype(auto) operator+=(const Vector v) const  noexcept
+	decltype(auto) operator+=(const Vector<type> v) const  noexcept
 	{
 		void* s;
 		size_t t;
@@ -452,7 +452,7 @@ public:
 			insert(p.used, s, t);
 		else insert(c.use, s, t);
 	}
-	decltype(auto) operator+=(const Vector& v) const noexcept
+	decltype(auto) operator+=(const Vector<type>& v) const noexcept
 	{
 		void* s;
 		size_t t;
@@ -471,7 +471,7 @@ public:
 			insert(p.used, s, t);
 		else insert(c.use, s, t);
 	}
-	decltype(auto) operator+=(const Vector&& v) const noexcept
+	decltype(auto) operator+=(const Vector<type>&& v) const noexcept
 	{
 		void* s;
 		size_t t;
@@ -543,7 +543,7 @@ public:
 			cfg |= config::bit_always_using_pointer | config::bit_pointer;
 		insert(0, ray, sz);
 	}
-	Vector(Vector& v) noexcept
+	Vector(Vector<type>& v) noexcept
 	{
 		cfg = config::bit_init;
 		v.copy(this);
