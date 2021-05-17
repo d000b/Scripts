@@ -9,8 +9,10 @@
 namespace UltimaAPI
 {
 	struct WXYZ;
-	template <typename type>  class Tensor;
-	template <typename type>  class TensorFilter;
+	// Create a PseudoTensor class that provides methods and fields in inheritance ???
+	template <typename type, typename maps>	class PseudoTensor;
+	template <typename type>				class Tensor;
+	template <typename type>				class TensorFilter;
 }
 
 struct UltimaAPI::WXYZ
@@ -100,13 +102,14 @@ struct UltimaAPI::WXYZ
 	}
 };
 
-template <typename type>
-class  UltimaAPI::Tensor
+template <typename type, typename maps>
+class  UltimaAPI::PseudoTensor
 {
+	friend class Tensor<type>;
 	friend class TensorFilter<type>;
 protected:
-	type*         vec;
-	Vector<WXYZ>  dim;
+	type* vec;
+	Vector<maps>  dim;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
@@ -114,37 +117,8 @@ public:
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 private:
-	decltype(auto) allocate() noexcept
-	{
-		auto ds = dim.size();
-		if (ds)
-		{
-			if (!vec)
-			{
-				if (ds > 1)
-				{
-					static_cast<type**&>(vec) = new type*[ds];
-					for (size_t d = 0; d < ds; ++d)
-					{
-						auto sz = dim[d].Multiply();
-						auto&& v = static_cast<type**&>(vec)[d] = new type[sz];
-					//	Memory::memset(v, v + sz, (type)0);  // I'm not sure if this is necessary
-					}
-				}
-				else
-				{
-					auto sz = dim[0].Multiply();
-					vec = new type[sz];
-				//	Memory::memset(vec, vec + sz, (type)0);  // I'm not sure if this is necessary
-				}
-			}
-		}
-		else free();
-	}
-	decltype(auto) allocate(size_t al)
-	{
-		dim.allocate(al);
-	}
+	decltype(auto) allocate() { }
+	decltype(auto) allocate(size_t) { }
 public:
 	decltype(auto) ResetPointer()
 	{
@@ -159,12 +133,12 @@ public:
 		}
 	}
 
-	decltype(auto) push_back(type* val, WXYZ v) noexcept
+	decltype(auto) push_back(type* val, maps v) noexcept
 	{
 		if (vec)
 		{
 			auto  old_size = dim.size();
-			void* ptr = new type*[dim.alloc_step()];
+			void* ptr = new type * [dim.alloc_step()];
 			if (old_size > 1)
 				memcpy(ptr, vec, old_size * sizeof(type*));
 			else ptr[0] = vec[0];
@@ -186,23 +160,27 @@ public:
 		}
 		dim.pop_back();
 	}
-	decltype(auto) insert(size_t place, type* ptr, WXYZ size)
+	decltype(auto) insert(size_t place, type* ptr, maps size)
 	{
-		// ...
+
 	}
-	decltype(auto) insert(size_t place, type* ptr, Vector<WXYZ>& size)
+	decltype(auto) insert(size_t place, type* ptr, Vector<maps>& size)
 	{
-		// ...
+
 	}
-	decltype(auto) insert(size_t place, Tensor<type>& tensor)
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& tensor)
 	{
-		// ...
+
+	}
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* tensor)
+	{
+
 	}
 	decltype(auto) size() noexcept
 	{
 		return dim.size();
 	}
-	decltype(auto) copy(Tensor<type>* v) noexcept
+	decltype(auto) copy(PseudoTensor<type, maps>* v) noexcept
 	{
 		v->allocate(dim.allocated);
 		dim.copy(v->dim);
@@ -227,7 +205,7 @@ public:
 	{
 		return vec;
 	}
-	decltype(auto) swap(Tensor<type>& v) noexcept
+	decltype(auto) swap(PseudoTensor<type, maps>& v) noexcept
 	{
 		std::swap(*this, v);
 	}
@@ -250,15 +228,19 @@ public:
 	}
 	decltype(auto) rate(double val) noexcept
 	{
-		return double&(dim.mul_alloc = val);
+		return double& (dim.mul_alloc = val);
 	}
 	decltype(auto) rate() noexcept
 	{
-		return double&(dim.mul_alloc);
+		return double& (dim.mul_alloc);
 	}
-	decltype(auto) size_of() noexcept
+	decltype(auto) sizeof_type() noexcept
 	{
 		return sizeof(type);
+	}
+	decltype(auto) sizeof_maps() noexcept
+	{
+		return sizeof(maps);
 	}
 	decltype(auto) shrink_to_fit() noexcept
 	{
@@ -273,20 +255,20 @@ public:
 		}
 	}
 
-	decltype(auto) DotProduct(Tensor<type>* t1)
+	decltype(auto) DotProduct(PseudoTensor<type, maps>* t1)
 	{
 
 		return (type)0;
 	}
-	decltype(auto) CrossProduct(Tensor<type>* t1)
+	decltype(auto) CrossProduct(PseudoTensor<type, maps>* t1)
 	{
 
 	}
-	decltype(auto) Convolution(Tensor<type>* t1)
+	decltype(auto) Convolution(PseudoTensor<type, maps>* t1)
 	{
 
 	}
-	decltype(auto) CrossCorrelation(Tensor<type>* t1)
+	decltype(auto) CrossCorrelation(PseudoTensor<type, maps>* t1)
 	{
 
 	}
@@ -328,35 +310,31 @@ public:
 	{
 		free();
 	}
-	decltype(auto) operator^=(Tensor<type>& v) noexcept
+	decltype(auto) operator^=(PseudoTensor<type, maps>& v) noexcept
 	{
 		swap(v);
 	}
-	decltype(auto) operator+=(type c) noexcept
-	{
-		push_back(c);
-	}
-	decltype(auto) operator+=(Tensor<type> v) noexcept
+	decltype(auto) operator+=(PseudoTensor<type, maps> v) noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(Tensor<type>& v) noexcept
+	decltype(auto) operator+=(PseudoTensor<type, maps>& v) noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(Tensor<type>&& v) noexcept
+	decltype(auto) operator+=(PseudoTensor<type, maps>&& v) noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Tensor<type> v) const  noexcept
+	decltype(auto) operator+=(const PseudoTensor<type, maps> v) const  noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Tensor<type>& v) const noexcept
+	decltype(auto) operator+=(const PseudoTensor<type, maps>& v) const noexcept
 	{
 		insert(used, v.start, v.used);
 	}
-	decltype(auto) operator+=(const Tensor<type>&& v) const noexcept
+	decltype(auto) operator+=(const PseudoTensor<type, maps>&& v) const noexcept
 	{
 		insert(used, v.start, v.used);
 	}
@@ -372,33 +350,107 @@ public:
 		return start[i];
 	}
 
-	Tensor() noexcept
+	PseudoTensor() noexcept
 	{
 		vec = nullptr;
 	}
-	Tensor(size_t sz) noexcept
+	PseudoTensor(size_t sz) noexcept
 	{
 		vec = nullptr;
 		allocate(sz);
 	}
-	Tensor(size_t sz, type* ray) noexcept
+	PseudoTensor(size_t sz, type* ray) noexcept
 	{
 		vec = nullptr;
 		insert(0, ray, sz);
 	}
-	Tensor(Tensor<type>& v) noexcept
+	PseudoTensor(PseudoTensor<type, maps>& v) noexcept
 	{
 		v.copy(this);
 	}
 
-	~Tensor() noexcept
+	~PseudoTensor() noexcept
 	{
 		free();
 	}
 };
 
 template <typename type>
-class  UltimaAPI::TensorFilter
+class  UltimaAPI::Tensor : public PseudoTensor<type, WXYZ>
+{
+private:
+	decltype(auto) allocate() noexcept
+	{
+		auto ds = dim.size();
+		if (ds)
+		{
+			if (!vec)
+			{
+				if (ds > 1)
+				{
+					static_cast<type**&>(vec) = new type*[ds];
+					for (size_t d = 0; d < ds; ++d)
+					{
+						auto sz = dim[d].Multiply();
+						auto&& v = static_cast<type**&>(vec)[d] = new type[sz];
+					//	Memory::memset(v, v + sz, (type)0);  // I'm not sure if this is necessary
+					}
+				}
+				else
+				{
+					auto sz = dim[0].Multiply();
+					vec = new type[sz];
+				//	Memory::memset(vec, vec + sz, (type)0);  // I'm not sure if this is necessary
+				}
+			}
+		}
+		else free();
+	}
+	decltype(auto) allocate(size_t al)
+	{
+		dim.allocate(al);
+	}
+public:
+	decltype(auto) DotProduct(Tensor<type>* t1)
+	{
+
+		return (type)0;
+	}
+	decltype(auto) CrossProduct(Tensor<type>* t1)
+	{
+
+	}
+	decltype(auto) Convolution(Tensor<type>* t1)
+	{
+
+	}
+	decltype(auto) CrossCorrelation(Tensor<type>* t1)
+	{
+
+	}
+
+	decltype(auto) operator[](size_t i) noexcept
+	{
+		if (i >= allocated)
+			allocate(i * mul_alloc + 1);
+		if (i >= used)
+		{
+			used = i + 1;
+			last = start + used;
+		}
+		return start[i];
+	}
+
+	Tensor() : PseudoTensor<type, WXYZ>() noexcept { }
+	Tensor(size_t sz) : PseudoTensor<type, WXYZ>(sz) noexcept { }
+	Tensor(size_t sz, type* ray) : PseudoTensor<type, WXYZ>(sz, ray) noexcept { }
+	Tensor(Tensor<type>& v) noexcept : PseudoTensor<type, WXYZ>(v) { }
+
+	~Tensor() noexcept { }
+};
+
+template <typename type>
+class  UltimaAPI::TensorFilter : public PseudoTensor<type, MapFilter>
 {
 	friend class Tensor<type>;
 protected:
@@ -416,8 +468,6 @@ protected:
 	};
 
 	eConfig				cfg;
-	type*				vec;
-	Vector<MapFilter>	map;
 public:
 	decltype(auto)  allocate()
 	{
@@ -444,21 +494,6 @@ public:
 		}
 	}
 
-	decltype(auto) ResetPointer()
-	{
-		auto size = map.size();
-		if (vec)
-		{
-			if (size > 1)
-				for (auto i = 0; i < size; i++)
-					delete[](reinterpret_cast<void**&>(vec)[i]);
-			delete[] vec;
-			vec = nullptr;
-		}
-	}
-
-
-
 	enum eConfig
 	{
 		cfg_null =	0,
@@ -469,3 +504,4 @@ public:
 
 	};
 };
+
