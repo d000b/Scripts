@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <memory.h>
 #include <initializer_list>
@@ -9,7 +9,8 @@
 namespace UltimaAPI
 {
 	struct WXYZ;
-	// Create a PseudoTensor class that provides methods and fields in inheritance ???
+	struct MapFilter;
+
 	template <typename type, typename maps>	class PseudoTensor;
 	template <typename type>				class Tensor;
 	template <typename type>				class TensorFilter;
@@ -102,20 +103,41 @@ struct UltimaAPI::WXYZ
 	}
 };
 
+struct UltimaAPI::MapFilter
+{
+	// mask_(WXYZ),			This is the NUMBER of elements for each dimension.
+	// padding_(WXYZ),		This is the number of cells for padding. [for a 3x3 mask with a rarity of 0, so that the convolution image needs to be set to 1 in padding]
+	// strider_step_(WXYZ),	This is responsible for what step the filter will take on the input array.
+	// sparsity_(WXYZ)		[in developing] This is responsible for how tightly the filter cells will be located on the input array. 
+	size_t mask_w, mask_x, mask_y, mask_z;
+	int    padding_w, padding_x, padding_y, padding_z;
+	size_t strider_step_w, strider_step_x, strider_step_y, strider_step_z;
+	size_t sparsity_w, sparsity_x, sparsity_y, sparsity_z;
+};
+
 template <typename type, typename maps>
 class  UltimaAPI::PseudoTensor
 {
 	friend class Tensor<type>;
 	friend class TensorFilter<type>;
-protected:
-	type* vec;
-	Vector<maps>  dim;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+	enum eConfig
+	{
+		cfg_null = 0,
+
+		cfg_init = 1 << 0,
+		cfg_bias = 1 << 1,
+		cfg_gpus = 1 << 2
+	};
+protected:
+	eConfig			cfg;
+	type*			vec;
+	Vector<maps>	dim;
 private:
 	decltype(auto) allocate() { }
 	decltype(auto) allocate(size_t) { }
@@ -133,15 +155,37 @@ public:
 		}
 	}
 
+	decltype(auto) push_back(PseudoTensor<type, maps>* t) noexcept
+	{
+		if (t->vec)
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = t->dim.size();
+				void* ptr = new type*[dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], t->vec, push_size * sizeof(type*));
+				else ptr[old_size] = t->vec;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = t->vec;
+			dim += t->dim;
+		}
+	}
 	decltype(auto) push_back(type* val, maps v) noexcept
 	{
 		if (vec)
 		{
 			auto  old_size = dim.size();
-			void* ptr = new type * [dim.alloc_step()];
+			void* ptr = new type*[dim.alloc_step()];
 			if (old_size > 1)
 				memcpy(ptr, vec, old_size * sizeof(type*));
-			else ptr[0] = vec[0];
+			else ptr[0] = vec;
 			ptr[old_size] = val;
 			delete[] vec;
 			vec = ptr;
@@ -160,21 +204,90 @@ public:
 		}
 		dim.pop_back();
 	}
-	decltype(auto) insert(size_t place, type* ptr, maps size)
+	decltype(auto) insert(size_t place, type* v, maps map)
 	{
-
+		if (v)
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				void* ptr = new type*[dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				ptr[old_size] = v;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = v;
+			dim.push_back(map);
+		}
 	}
-	decltype(auto) insert(size_t place, type* ptr, Vector<maps>& size)
+	decltype(auto) insert(size_t place, type* v, Vector<maps>& map)
 	{
-
+		if (v)
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = map.size();
+				void* ptr = new type*[dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], v, push_size * sizeof(type*));
+				else ptr[old_size] = v;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = v;
+			dim += map;
+		}
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& tensor)
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& t)
 	{
-
+		if (t.vec)
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = t.dim.size();
+				void* ptr = new type*[dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], t.vec, push_size * sizeof(type*));
+				else ptr[old_size] = t.vec;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = t.vec;
+			dim += t.dim;
+		}
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* tensor)
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* t)
 	{
-
+		if (t->vec)
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = t->dim.size();
+				void* ptr = new type * [dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], t->vec, push_size * sizeof(type*));
+				else ptr[old_size] = t->vec;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = t->vec;
+			dim += t->dim;
+		}
 	}
 	decltype(auto) size() noexcept
 	{
@@ -257,20 +370,19 @@ public:
 
 	decltype(auto) DotProduct(PseudoTensor<type, maps>* t1)
 	{
-
 		return (type)0;
-	}
+}
 	decltype(auto) CrossProduct(PseudoTensor<type, maps>* t1)
 	{
-
-	}
+		return PseudoTensor<type, maps>();
+}
 	decltype(auto) Convolution(PseudoTensor<type, maps>* t1)
 	{
-
-	}
+		return PseudoTensor<type, maps>();
+}
 	decltype(auto) CrossCorrelation(PseudoTensor<type, maps>* t1)
 	{
-
+		return PseudoTensor<type, maps>();
 	}
 
 	decltype(auto) begin() noexcept
@@ -316,38 +428,32 @@ public:
 	}
 	decltype(auto) operator+=(PseudoTensor<type, maps> v) noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator+=(PseudoTensor<type, maps>& v) noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator+=(PseudoTensor<type, maps>&& v) noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator+=(const PseudoTensor<type, maps> v) const  noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator+=(const PseudoTensor<type, maps>& v) const noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator+=(const PseudoTensor<type, maps>&& v) const noexcept
 	{
-		insert(used, v.start, v.used);
+		insert(dim.size(), v);
 	}
 	decltype(auto) operator[](size_t i) noexcept
 	{
-		if (i >= allocated)
-			allocate(i * mul_alloc + 1);
-		if (i >= used)
-		{
-			used = i + 1;
-			last = start + used;
-		}
-		return start[i];
+		dim[i];
+		return vec[i];
 	}
 
 	PseudoTensor() noexcept
@@ -411,39 +517,30 @@ private:
 		dim.allocate(al);
 	}
 public:
-	decltype(auto) DotProduct(Tensor<type>* t1)
+	decltype(auto) insert(size_t place, type* v, WXYZ map)
 	{
-
-		return (type)0;
+		if (map[0] && map[1] && map[2] && map[3])
+			__super::insert(place, v, map);
 	}
-	decltype(auto) CrossProduct(Tensor<type>* t1)
+	decltype(auto) insert(size_t place, type* v, Vector<WXYZ>& map)
 	{
-
+		if (map.size())
+			__super::insert(place, v, map);
 	}
-	decltype(auto) Convolution(Tensor<type>* t1)
+	decltype(auto) insert(size_t place, PseudoTensor<type, WXYZ>& t)
 	{
-
+		if (t.dim.size())
+			__super::insert(place, t);
 	}
-	decltype(auto) CrossCorrelation(Tensor<type>* t1)
+	decltype(auto) insert(size_t place, PseudoTensor<type, WXYZ>* t)
 	{
-
+		if (t->dim.size())
+			__super::insert(place, t);
 	}
-
-	decltype(auto) operator[](size_t i) noexcept
-	{
-		if (i >= allocated)
-			allocate(i * mul_alloc + 1);
-		if (i >= used)
-		{
-			used = i + 1;
-			last = start + used;
-		}
-		return start[i];
-	}
-
-	Tensor() : PseudoTensor<type, WXYZ>() noexcept { }
-	Tensor(size_t sz) : PseudoTensor<type, WXYZ>(sz) noexcept { }
-	Tensor(size_t sz, type* ray) : PseudoTensor<type, WXYZ>(sz, ray) noexcept { }
+	
+	Tensor() noexcept : PseudoTensor<type, WXYZ>() { }
+	Tensor(size_t sz) noexcept : PseudoTensor<type, WXYZ>(sz) { }
+	Tensor(size_t sz, type* ray) noexcept : PseudoTensor<type, WXYZ>(sz, ray) { }
 	Tensor(Tensor<type>& v) noexcept : PseudoTensor<type, WXYZ>(v) { }
 
 	~Tensor() noexcept { }
@@ -453,38 +550,23 @@ template <typename type>
 class  UltimaAPI::TensorFilter : public PseudoTensor<type, MapFilter>
 {
 	friend class Tensor<type>;
-protected:
-	enum eConfig;
-	struct MapFilter
-	{
-		// mask_(WXYZ),			This is the NUMBER of elements for each dimension.
-		// padding_(WXYZ),		This is the number of cells for padding. [for a 3x3 mask with a rarity of 0, so that the convolution image needs to be set to 1 in padding]
-		// strider_step_(WXYZ),	This is responsible for what step the filter will take on the input array.
-		// sparsity_(WXYZ)		[in developing] This is responsible for how tightly the filter cells will be located on the input array. 
-		size_t mask_w, mask_x, mask_y, mask_z;
-		int    padding_w, padding_x, padding_y, padding_z;
-		size_t strider_step_w, strider_step_x, strider_step_y, strider_step_z;
-		size_t sparsity_w, sparsity_x, sparsity_y, sparsity_z;
-	};
-
-	eConfig				cfg;
 public:
 	decltype(auto)  allocate()
 	{
 		if (cfg & cfg_init)
 			return (void)false;
 
-		auto maps = map.size();
-		if (maps)
+		auto ds = dim.size();
+		if (ds)
 		{
-			if (maps > 1)
+			if (ds > 1)
 			{
 
 			}
 			else
 			{
-				auto f = map[0];
-				vec = new 
+				auto f = dim[0];
+			//	vec = new 
 			}
 		}
 		else
@@ -494,14 +576,5 @@ public:
 		}
 	}
 
-	enum eConfig
-	{
-		cfg_null =	0,
-		 
-		cfg_init =	1 << 0,
-		cfg_bias =	1 << 1,
-		cfg_gpus =	1 << 2,
-
-	};
+	
 };
-
