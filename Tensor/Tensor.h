@@ -14,6 +14,8 @@ namespace UltimaAPI
 	template <typename type, typename maps>	class PseudoTensor;
 	template <typename type>				class Tensor;
 	template <typename type>				class TensorFilter;
+
+	template <typename type1, typename type2, typename maps> class DoubleTensor;
 }
 
 struct UltimaAPI::WXYZ
@@ -135,14 +137,39 @@ public:
 		cfg_gpus = 1 << 2
 	};
 protected:
-	eConfig			cfg;
+	int				cfg;
 	type*			vec;
 	Vector<maps>	dim;
 private:
-	decltype(auto) allocate() { }
-	decltype(auto) allocate(size_t) { }
+	decltype(auto) typed_allocate(maps v) { return size_t(0); }
+	decltype(auto) allocate() noexcept
+	{
+		if (cfg & eConfig::cfg_init)
+			return;
+
+		auto ds = dim.size();
+		if (ds)
+		{
+			if (!vec)
+			{
+				if (ds > 1)
+				{
+					static_cast<type**&>(vec) = new type*[ds];
+					for (size_t d = 0; d < ds; ++d)
+						static_cast<type**&>(vec)[d] = new type[typed_allocate(dim[d])];
+				}
+				else vec = new type[typed_allocate(dim[0])];
+			}
+		}
+		else this->free();
+		cfg |= eConfig::cfg_init;
+	}
+	decltype(auto) allocate(size_t al) noexcept
+	{
+		this->dim.allocate(al);
+	}
 public:
-	decltype(auto) ResetPointer()
+	decltype(auto) ResetPointer() noexcept
 	{
 		auto size = dim.size();
 		if (vec)
@@ -153,8 +180,9 @@ public:
 			delete[] vec;
 			vec = nullptr;
 		}
+		cfg &= ~eConfig::cfg_init;
 	}
-
+//	еблан блять тупой нахуй, в insert ты используешь свойство push_back, а не insertа - измени!
 	decltype(auto) push_back(PseudoTensor<type, maps>* t) noexcept
 	{
 		if (t->vec)
@@ -204,7 +232,7 @@ public:
 		}
 		dim.pop_back();
 	}
-	decltype(auto) insert(size_t place, type* v, maps map)
+	decltype(auto) insert(size_t place, type* v, maps map) noexcept
 	{
 		if (v)
 		{
@@ -223,9 +251,9 @@ public:
 			dim.push_back(map);
 		}
 	}
-	decltype(auto) insert(size_t place, type* v, Vector<maps>& map)
+	decltype(auto) insert(size_t place, type* v, Vector<maps>& map) noexcept
 	{
-		if (v)
+		if (v && map.size())
 		{
 			if (vec)
 			{
@@ -245,9 +273,9 @@ public:
 			dim += map;
 		}
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& t)
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& t) noexcept
 	{
-		if (t.vec)
+		if (t.not_empty())
 		{
 			if (vec)
 			{
@@ -267,9 +295,9 @@ public:
 			dim += t.dim;
 		}
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* t)
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* t) noexcept
 	{
-		if (t->vec)
+		if (t->not_empty())
 		{
 			if (vec)
 			{
@@ -302,8 +330,8 @@ public:
 			v->allocate();
 			if (dim.used > 1)
 				for (size_t i = 0; i < dim.used; ++i)
-					memcpy(static_cast<type**&>(v->vec)[i], static_cast<type**&>(vec)[i], dim[i].Multiply() * sizeof(type));
-			else memcpy(v->vec, vec, dim[0].Multiply() * sizeof(type));
+					memcpy(static_cast<type**&>(v->vec)[i], static_cast<type**&>(vec)[i], typed_allocate(dim[i]) * sizeof(type));
+			else memcpy(v->vec, vec, typed_allocate(dim[0]) * sizeof(type));
 		}
 	}
 	decltype(auto) back() noexcept
@@ -322,9 +350,9 @@ public:
 	{
 		std::swap(*this, v);
 	}
-	decltype(auto) empty() noexcept
+	decltype(auto) not_empty() noexcept
 	{
-		return dim.used == 0;
+		return vec && dim.size();
 	}
 	decltype(auto) resize(size_t sz) noexcept
 	{
@@ -339,13 +367,17 @@ public:
 	{
 		allocate(sz);
 	}
+	decltype(auto) point_init() noexcept // call after using 1) reserve 2) filling dim 
+	{
+		allocate();
+	}
 	decltype(auto) rate(double val) noexcept
 	{
-		return double& (dim.mul_alloc = val);
+		return double&(dim.mul_alloc = val);
 	}
 	decltype(auto) rate() noexcept
 	{
-		return double& (dim.mul_alloc);
+		return double&(dim.mul_alloc);
 	}
 	decltype(auto) sizeof_type() noexcept
 	{
@@ -368,38 +400,33 @@ public:
 		}
 	}
 
-	decltype(auto) DotProduct(PseudoTensor<type, maps>* t1)
-	{
-		return (type)0;
-}
-	decltype(auto) CrossProduct(PseudoTensor<type, maps>* t1)
-	{
-		return PseudoTensor<type, maps>();
-}
-	decltype(auto) Convolution(PseudoTensor<type, maps>* t1)
-	{
-		return PseudoTensor<type, maps>();
-}
-	decltype(auto) CrossCorrelation(PseudoTensor<type, maps>* t1)
-	{
-		return PseudoTensor<type, maps>();
-	}
-
 	decltype(auto) begin() noexcept
 	{
-		return iterator(dim.start);
+		auto sz = dim.size();
+		if (sz > 1)
+			return iterator(vec);
+		else return iterator(reinterpret_cast<type*>(&vec));
 	}
 	decltype(auto) end() noexcept
 	{
-		return iterator(dim.start + dim.used);
+		auto sz = dim.size();
+		if (sz > 1)
+			return iterator(vec + sz);
+		else return iterator(reinterpret_cast<type*>(&vec) + sz);
 	}
 	decltype(auto) cbegin() const noexcept
 	{
-		return const_iterator(dim.start);
+		auto sz = dim.size();
+		if (sz > 1)
+			return const_iterator(vec);
+		else return const_iterator(reinterpret_cast<type*>(&vec));
 	}
 	decltype(auto) cend() const noexcept
 	{
-		return const_iterator(dim.start + dim.used);
+		auto sz = dim.size();
+		if (sz > 1)
+			return const_iterator(vec + sz);
+		else return const_iterator(reinterpret_cast<type*>(&vec) + sz);
 	}
 	decltype(auto) rbegin() noexcept
 	{
@@ -438,7 +465,7 @@ public:
 	{
 		insert(dim.size(), v);
 	}
-	decltype(auto) operator+=(const PseudoTensor<type, maps> v) const  noexcept
+	decltype(auto) operator+=(const PseudoTensor<type, maps> v) const noexcept
 	{
 		insert(dim.size(), v);
 	}
@@ -484,60 +511,28 @@ public:
 template <typename type>
 class  UltimaAPI::Tensor : public PseudoTensor<type, WXYZ>
 {
-private:
-	decltype(auto) allocate() noexcept
+	decltype(auto) typed_allocate(WXYZ v)
 	{
-		auto ds = dim.size();
-		if (ds)
-		{
-			if (!vec)
-			{
-				if (ds > 1)
-				{
-					static_cast<type**&>(vec) = new type*[ds];
-					for (size_t d = 0; d < ds; ++d)
-					{
-						auto sz = dim[d].Multiply();
-						auto&& v = static_cast<type**&>(vec)[d] = new type[sz];
-					//	Memory::memset(v, v + sz, (type)0);  // I'm not sure if this is necessary
-					}
-				}
-				else
-				{
-					auto sz = dim[0].Multiply();
-					vec = new type[sz];
-				//	Memory::memset(vec, vec + sz, (type)0);  // I'm not sure if this is necessary
-				}
-			}
-		}
-		else free();
-	}
-	decltype(auto) allocate(size_t al)
-	{
-		dim.allocate(al);
+		return v.Multiply() /*+ (PseudoTensor<type, WXYZ>::cfg_bias && PseudoTensor<type, WXYZ>::cfg_gpus) * (something X values numerically equal outputs size vector)*/;
 	}
 public:
-	decltype(auto) insert(size_t place, type* v, WXYZ map)
+	decltype(auto) DotProduct(PseudoTensor<type, MapFilter>&& in, PseudoTensor<type, WXYZ>&& out)
 	{
-		if (map[0] && map[1] && map[2] && map[3])
-			__super::insert(place, v, map);
+		// bruhed
 	}
-	decltype(auto) insert(size_t place, type* v, Vector<WXYZ>& map)
+	decltype(auto) CrossProduct(PseudoTensor<type, MapFilter>&& in, PseudoTensor<type, WXYZ>&& out)
 	{
-		if (map.size())
-			__super::insert(place, v, map);
+		// bruhed
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, WXYZ>& t)
+	decltype(auto) Convolution(PseudoTensor<type, MapFilter>&& in, PseudoTensor<type, WXYZ>&& out)
 	{
-		if (t.dim.size())
-			__super::insert(place, t);
+		// bruhed
 	}
-	decltype(auto) insert(size_t place, PseudoTensor<type, WXYZ>* t)
+	decltype(auto) CrossCorrelation(PseudoTensor<type, MapFilter>&& in, PseudoTensor<type, WXYZ>&& out)
 	{
-		if (t->dim.size())
-			__super::insert(place, t);
+		// bruhed
 	}
-	
+
 	Tensor() noexcept : PseudoTensor<type, WXYZ>() { }
 	Tensor(size_t sz) noexcept : PseudoTensor<type, WXYZ>(sz) { }
 	Tensor(size_t sz, type* ray) noexcept : PseudoTensor<type, WXYZ>(sz, ray) { }
@@ -550,31 +545,457 @@ template <typename type>
 class  UltimaAPI::TensorFilter : public PseudoTensor<type, MapFilter>
 {
 	friend class Tensor<type>;
-public:
-	decltype(auto)  allocate()
+	decltype(auto) typed_allocate(MapFilter v)
 	{
-		if (cfg & cfg_init)
-			return (void)false;
+		return v.mask_w * v.mask_x * v.mask_y * v.mask_z + PseudoTensor<type, MapFilter>::cfg_bias;
+	}
+public:
 
+};
+
+template <typename type1, typename type2, typename maps>
+class  UltimaAPI::DoubleTensor : public PseudoTensor<type1, maps>
+{
+	// don't use in current time begin-end for
+protected:
+	type2* vec2;
+private:
+	decltype(auto) typed_allocate(maps v) { return size_t(0); }
+	decltype(auto) allocate() noexcept
+	{
+		if (this->cfg & PseudoTensor<type1, maps>::eConfig::cfg_init)
+			return;
+
+		auto ds = this->dim.size();
+		if (ds)
+		{
+			// Ideally, only a single pointer should be checked here, but I'm not sure that the pointer will not be deleted / nullified at runtime
+			if (!this->vec && !this->vec2) // WARNING This is a slow way, but it is the most accurate in checking. 
+			{
+				if (ds > 1)
+				{
+					static_cast<type1**&>(this->vec) =  new type1*[ds];
+					static_cast<type1**&>(this->vec2) = new type2*[ds];
+					for (size_t d = 0; d < ds; ++d)
+					{
+						size_t al = typed_allocate(dim[d]);
+						static_cast<type1**&>(this->vec)[d] =  new type1[al];
+						static_cast<type2**&>(this->vec2)[d] = new type2[al];
+					}
+				}
+				else
+				{
+					size_t al = typed_allocate(dim[0]);
+					this->vec =  new type1[al];
+					this->vec2 = new type2[al];
+				}
+			}
+		}
+		else this->free();
+		this->cfg |= PseudoTensor<type1, maps>::eConfig::cfg_init;
+	}
+public:
+	decltype(auto) ResetPointer() noexcept
+	{
+		auto size = dim.size();
+		if (!this->vec && !this->vec2)
+		{
+			if (size > 1)
+				for (auto i = 0; i < size; i++)
+				{
+					delete[](reinterpret_cast<void**&>(this->vec)[i]);
+					delete[](reinterpret_cast<void**&>(this->vec2)[i]);
+				}
+			delete[] this->vec;
+			delete[] this->vec2;
+			this->vec = nullptr;
+			this->vec2 = nullptr;
+		}
+		this->cfg &= ~PseudoTensor<type1, maps>::eConfig::cfg_init;
+	}
+
+	decltype(auto) push_back(DoubleTensor<type1, type2, maps>* t) noexcept
+	{
+		if (t->vec && t->vec2)
+		{
+			if (this->vec && this->vec2)
+			{
+				auto  al = dim.alloc_step();
+				auto  old_size = dim.size();
+				auto  push_size = t->dim.size();
+				void* ptr1 = new type1*[al];
+				void* ptr2 = new type2*[al];
+				if (old_size > 1)
+				{
+					memcpy(ptr1, this->vec,  old_size * sizeof(type1*));
+					memcpy(ptr2, this->vec2, old_size * sizeof(type2*));
+				}
+				else
+				{
+					ptr1[0] = this->vec;
+					ptr2[0] = this->vec2;
+				}
+				if (push_size > 1)
+				{
+					memcpy(&ptr1[old_size], t->vec,  push_size * sizeof(type1*));
+					memcpy(&ptr2[old_size], t->vec2, push_size * sizeof(type2*));
+				}
+				else
+				{
+					ptr1[old_size] = t->vec;
+					ptr2[old_size] = t->vec2;
+				}
+				delete[] this->vec;
+				delete[] this->vec2;
+				this->vec =  ptr1;
+				this->vec2 = ptr2;
+			}
+			else
+			{
+				this->vec =  t->vec;
+				this->vec2 = t->vec2;
+			}
+			dim += t->dim;
+		}
+	}
+	decltype(auto) push_back(type1* v1, type2* v2, maps v) noexcept
+	{
+		if (this->vec && this->vec2)
+		{
+			auto  al = dim.alloc_step();
+			auto  old_size = dim.size();
+			void* ptr1 = new type1*[al];
+			void* ptr2 = new type2*[al];
+			if (old_size > 1)
+			{
+				memcpy(ptr1, this->vec,  old_size * sizeof(type1*));
+				memcpy(ptr2, this->vec2, old_size * sizeof(type2*));
+			}
+			else
+			{
+				ptr1[0] = this->vec;
+				ptr2[0] = this->vec2;
+			}
+			ptr1[old_size] = v1;
+			ptr2[old_size] = v2;
+			delete[] this->vec;
+			delete[] this->vec2;
+			this->vec =  ptr1;
+			this->vec2 = ptr2;
+		}
+		else
+		{
+			this->vec =  v1;
+			this->vec2 = v2;
+		}
+		dim.push_back(v);
+	}
+	decltype(auto) pop_back() noexcept
+	{
 		auto ds = dim.size();
 		if (ds)
 		{
 			if (ds > 1)
 			{
-
+				delete[] static_cast<type1**&>(this->vec)[ds - 1];
+				delete[] static_cast<type2**&>(this->vec2)[ds - 1];
 			}
 			else
 			{
-				auto f = dim[0];
-			//	vec = new 
+				delete[] this->vec;
+				delete[] this->vec2;
 			}
 		}
-		else
+		dim.pop_back();
+	}
+	decltype(auto) insert(size_t place, type1* v1, type2* v2, maps map) noexcept
+	{
+		if (v1 && v2)
 		{
-			// throw
-			return (void)false;
+			if (this->vec && this->vec2)
+			{
+				auto  al = dim.alloc_step();
+				auto  old_size = dim.size();
+				void* ptr1 = new type1*[al];
+				void* ptr2 = new type2*[al];
+				if (old_size > 1)
+				{
+					memcpy(ptr1, this->vec,  old_size * sizeof(type1*));
+					memcpy(ptr2, this->vec2, old_size * sizeof(type2*));
+				}
+				else
+				{
+					ptr1[0] = this->vec;
+					ptr2[0] = this->vec2;
+				}
+				ptr1[old_size] = v1;
+				ptr2[old_size] = v2;
+				delete[] this->vec;
+				delete[] this->vec2;
+				this->vec =  ptr1;
+				this->vec2 = ptr2;
+			}
+			else
+			{
+				this->vec =  v1;
+				this->vec2 = v2;
+			}
+			dim.push_back(map);
+		}
+	}
+	decltype(auto) insert(size_t place, type* v, Vector<maps>& map) noexcept
+	{
+		if (v && map.size())
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = map.size();
+				void* ptr = new type * [dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], v, push_size * sizeof(type*));
+				else ptr[old_size] = v;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = v;
+			dim += map;
+		}
+	}
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>& t) noexcept
+	{
+		if (t.not_empty())
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = t.dim.size();
+				void* ptr = new type * [dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], t.vec, push_size * sizeof(type*));
+				else ptr[old_size] = t.vec;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = t.vec;
+			dim += t.dim;
+		}
+	}
+	decltype(auto) insert(size_t place, PseudoTensor<type, maps>* t) noexcept
+	{
+		if (t->not_empty())
+		{
+			if (vec)
+			{
+				auto  old_size = dim.size();
+				auto  push_size = t->dim.size();
+				void* ptr = new type * [dim.alloc_step()];
+				if (old_size > 1)
+					memcpy(ptr, vec, old_size * sizeof(type*));
+				else ptr[0] = vec;
+				if (push_size > 1)
+					memcpy(&ptr[old_size], t->vec, push_size * sizeof(type*));
+				else ptr[old_size] = t->vec;
+				delete[] vec;
+				vec = ptr;
+			}
+			else vec = t->vec;
+			dim += t->dim;
+		}
+	}
+	decltype(auto) size() noexcept
+	{
+		return dim.size();
+	}
+	decltype(auto) copy(PseudoTensor<type, maps>* v) noexcept
+	{
+		v->allocate(dim.allocated);
+		dim.copy(v->dim);
+		if (dim.used)
+		{
+			v->allocate();
+			if (dim.used > 1)
+				for (size_t i = 0; i < dim.used; ++i)
+					memcpy(static_cast<type**&>(v->vec)[i], static_cast<type**&>(vec)[i], typed_allocate(dim[i]) * sizeof(type));
+			else memcpy(v->vec, vec, typed_allocate(dim[0]) * sizeof(type));
+		}
+	}
+	decltype(auto) back() noexcept
+	{
+		return *dim.last;
+	}
+	decltype(auto) capacity() noexcept
+	{
+		return dim.capacity();
+	}
+	decltype(auto) data() noexcept
+	{
+		return vec;
+	}
+	decltype(auto) swap(PseudoTensor<type, maps>& v) noexcept
+	{
+		std::swap(*this, v);
+	}
+	decltype(auto) not_empty() noexcept
+	{
+		return vec && dim.size();
+	}
+	decltype(auto) resize(size_t sz) noexcept
+	{
+		dim.resize(sz);
+	}
+	decltype(auto) free() noexcept
+	{
+		ResetPointer();
+		dim.free();
+	}
+	decltype(auto) reserve(size_t sz) noexcept
+	{
+		allocate(sz);
+	}
+	decltype(auto) point_init() noexcept // call after using 1) reserve 2) filling dim 
+	{
+		allocate();
+	}
+	decltype(auto) rate(double val) noexcept
+	{
+		return double& (dim.mul_alloc = val);
+	}
+	decltype(auto) rate() noexcept
+	{
+		return double& (dim.mul_alloc);
+	}
+	decltype(auto) sizeof_type() noexcept
+	{
+		return sizeof(type);
+	}
+	decltype(auto) sizeof_maps() noexcept
+	{
+		return sizeof(maps);
+	}
+	decltype(auto) shrink_to_fit() noexcept
+	{
+		dim.shrink_to_fit();
+		auto old_size = dim.size();
+		if (old_size > 1)
+		{
+			void* ptr = new type * [old_size];
+			memcpy(ptr, vec, old_size * sizeof(type*));
+			delete[] vec;
+			vec = ptr;
 		}
 	}
 
-	
+	decltype(auto) begin() noexcept
+	{
+		auto sz = dim.size();
+		if (sz > 1)
+			return iterator(vec);
+		else return iterator(reinterpret_cast<type*>(&vec));
+	}
+	decltype(auto) end() noexcept
+	{
+		auto sz = dim.size();
+		if (sz > 1)
+			return iterator(vec + sz);
+		else return iterator(reinterpret_cast<type*>(&vec) + sz);
+	}
+	decltype(auto) cbegin() const noexcept
+	{
+		auto sz = dim.size();
+		if (sz > 1)
+			return const_iterator(vec);
+		else return const_iterator(reinterpret_cast<type*>(&vec));
+	}
+	decltype(auto) cend() const noexcept
+	{
+		auto sz = dim.size();
+		if (sz > 1)
+			return const_iterator(vec + sz);
+		else return const_iterator(reinterpret_cast<type*>(&vec) + sz);
+	}
+	decltype(auto) rbegin() noexcept
+	{
+		return reverse_iterator(end());
+	}
+	decltype(auto) rend() noexcept
+	{
+		return reverse_iterator(begin());
+	}
+	decltype(auto) crbegin() const noexcept
+	{
+		return const_reverse_iterator(cend());
+	}
+	decltype(auto) crend() const noexcept
+	{
+		return const_reverse_iterator(cbegin());
+	}
+
+	decltype(auto) operator~() noexcept
+	{
+		free();
+	}
+	decltype(auto) operator^=(PseudoTensor<type, maps>& v) noexcept
+	{
+		swap(v);
+	}
+	decltype(auto) operator+=(PseudoTensor<type, maps> v) noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator+=(PseudoTensor<type, maps>& v) noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator+=(PseudoTensor<type, maps>&& v) noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator+=(const PseudoTensor<type, maps> v) const noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator+=(const PseudoTensor<type, maps>& v) const noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator+=(const PseudoTensor<type, maps>&& v) const noexcept
+	{
+		insert(dim.size(), v);
+	}
+	decltype(auto) operator[](size_t i) noexcept
+	{
+		dim[i];
+		return vec[i];
+	}
+
+	PseudoTensor() noexcept
+	{
+		vec = nullptr;
+	}
+	PseudoTensor(size_t sz) noexcept
+	{
+		vec = nullptr;
+		allocate(sz);
+	}
+	PseudoTensor(size_t sz, type* ray) noexcept
+	{
+		vec = nullptr;
+		insert(0, ray, sz);
+	}
+	PseudoTensor(PseudoTensor<type, maps>& v) noexcept
+	{
+		v.copy(this);
+	}
+
+	~PseudoTensor() noexcept
+	{
+		free();
+	}
 };
