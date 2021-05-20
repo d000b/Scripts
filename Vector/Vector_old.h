@@ -17,7 +17,7 @@ class UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	type* start, *last;
+	type* start;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
@@ -29,16 +29,14 @@ private:
 		if (al)
 		{
 			if (!start)
-			{
-				last = start = new type[allocated = al];
-			}
+				start = new type[allocated = al];
 			else if (al == allocated); // maybe adding code to do something!
 			else
 			{
 				type* block;
 				memcpy(block = new type[allocated = al], start, (used = used > al ? al : used) * sizeof(type));
 				delete[] start;
-				last = (start = block) + used;
+				start = block;
 			}
 		}
 		else free();
@@ -48,29 +46,24 @@ public:
 	{
 		if (used >= allocated)
 			allocate(alloc_step());
-		else if (used > 0)
-			++last;
-		*last = val;
+		start[used] = val;
 		++used;
 	}
 	decltype(auto) pop_back() noexcept
 	{
 		if (used > 0)
-		{
-			--last;
 			--used;
-		}
 	}
 	decltype(auto) insert(size_t place, type val) noexcept
 	{
 		if (place >= allocated)
 		{
 			allocate((used = place) * mul_alloc + 1);
-			*last = val;
+			start[used] = val;
 		}
 		else if (place > used)
 		{
-			*(last = start + (used = place)) = val;
+			start[used = place] = val;
 		}
 		else start[place] = val;
 	}
@@ -79,7 +72,7 @@ public:
 		if (place + count >= allocated)
 			allocate((used = place + count) * mul_alloc + 1);
 		else if (place + count > used)
-			last = start + (used = place + count);
+			used = place + count;
 		memcpy(start + place, val, count * sizeof(type));
 	}
 	decltype(auto) size() noexcept
@@ -98,19 +91,15 @@ public:
 	{
 		v->allocate(allocated);
 		if (used)
-		{
-			v->used = used;
-			memcpy(v->start, start, used * sizeof(type));
-		}
+			memcpy(v->start, start, (v->used = used) * sizeof(type));
 	}
 	decltype(auto) clear() noexcept
 	{
-		last = start;
 		used = 0;
 	}
 	decltype(auto) back() noexcept
 	{
-		return *last;
+		return *(start + used);
 	}
 	decltype(auto) data() noexcept
 	{
@@ -126,16 +115,15 @@ public:
 	}
 	decltype(auto) resize(size_t sz) noexcept
 	{
-		if ((used = sz) <= allocated)
-			last = start + used;
-		else allocate(used);
+		if ((used = sz) > allocated)
+			allocate(used);
 	}
 	decltype(auto) free() noexcept
 	{
 		allocated = used = 0;
 		if (start)
 			delete[] start;
-		last = start = nullptr;
+		start = nullptr;
 	}
 	decltype(auto) reserve(size_t sz) noexcept
 	{
@@ -243,10 +231,7 @@ public:
 		if (i >= allocated)
 			allocate(i * mul_alloc + 1);
 		if (i >= used)
-		{
 			used = i + 1;
-			last = start + used;
-		}
 		return start[i];
 	}
 
@@ -256,7 +241,7 @@ public:
 	}
 	Vector() noexcept
 	{
-		last = start = nullptr;
+		start = nullptr;
 		allocated = used = 0;
 	}
 	Vector(size_t sz) noexcept
