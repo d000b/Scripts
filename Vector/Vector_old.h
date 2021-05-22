@@ -79,7 +79,15 @@ public:
 	{
 		return used;
 	}
+	decltype(auto) size() const noexcept
+	{
+		return used;
+	}
 	decltype(auto) capacity() noexcept
+	{
+		return allocated;
+	}
+	decltype(auto) capacity() const noexcept
 	{
 		return allocated;
 	}
@@ -93,11 +101,38 @@ public:
 		if (used)
 			memcpy(v->start, start, (v->used = used) * sizeof(type));
 	}
+	decltype(auto) copy(Vector<type>* v) const noexcept
+	{
+		v->allocate(allocated);
+		if (used)
+			memcpy(v->start, start, (v->used = used) * sizeof(type));
+	}
 	decltype(auto) clear() noexcept
 	{
 		used = 0;
 	}
+	decltype(auto) clear() const noexcept
+	{
+		used = 0;
+	}
+	decltype(auto) erase(size_t i) noexcept
+	{
+		start[i] = 0; // ??
+		// memcpy(start + i, )
+	}
+	decltype(auto) last() noexcept
+	{
+		return start + used;
+	}
+	decltype(auto) last() const noexcept
+	{
+		return start + used;
+	}
 	decltype(auto) back() noexcept
+	{
+		return *(start + used);
+	}
+	decltype(auto) back() const noexcept
 	{
 		return *(start + used);
 	}
@@ -105,11 +140,23 @@ public:
 	{
 		return start;
 	}
+	decltype(auto) data() const noexcept
+	{
+		return start;
+	}
 	decltype(auto) swap(Vector<type>& v) noexcept
 	{
 		std::swap(*this, v);
 	}
+	decltype(auto) swap(Vector<type>& v) const noexcept
+	{
+		std::swap(*this, v);
+	}
 	decltype(auto) empty() noexcept
+	{
+		return used == 0;
+	}
+	decltype(auto) empty() const noexcept
 	{
 		return used == 0;
 	}
@@ -119,6 +166,13 @@ public:
 			allocate(used);
 	}
 	decltype(auto) free() noexcept
+	{
+		allocated = used = 0;
+		if (start)
+			delete[] start;
+		start = nullptr;
+	}
+	decltype(auto) free() const noexcept
 	{
 		allocated = used = 0;
 		if (start)
@@ -234,6 +288,10 @@ public:
 			used = i + 1;
 		return start[i];
 	}
+	decltype(auto) operator[](size_t i) const noexcept
+	{
+		return start[i];
+	}
 
 	Vector(std::initializer_list<type> v) noexcept
 	{
@@ -257,6 +315,17 @@ public:
 		insert(0, ray, sz);
 	}
 	Vector(Vector<type>& v) noexcept
+	{
+		v.copy(this);
+	}
+
+	Vector(const size_t sz, const type* ray) noexcept
+	{
+		used = 0;
+		start = nullptr;
+		insert(0, ray, sz);
+	}
+	Vector(const Vector<type>& v) noexcept
 	{
 		v.copy(this);
 	}
