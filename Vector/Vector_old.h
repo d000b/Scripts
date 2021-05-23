@@ -17,7 +17,7 @@ class UltimaAPI::Vector
 
 	size_t used;
 	size_t allocated;
-	type* start;
+	type*  start;
 public:
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
