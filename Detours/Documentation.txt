@@ -1,0 +1,41 @@
+void	Detours::attach()
+This function is for writing detours to originals of functions. 
+It is called only after filling the vectors with addresses.
+
+void	Detours::release()
+This function is to return the original addresses of functions.
+Do not use the Detours::free() function before calling this function.
+
+void	push_back(void* original_function, void* hooker_function, bool need2hook = true)
+A function to fill vectors with values.
+
+void	Detours::free()
+function of freeing memory of vectors.
+Before using it, call the release of hooks (Detours::release()).
+
+void	Detours::reserve(size_t allocate)
+function call Vector<type>::reserve(allocate) for all vectors.
+
+void	Detours::test_size()
+The function checks the size of hooks and function originals for compliance.
+
+void	Detours::test_code()
+checking the correctness of the recorded detours.
+
+void	Detours::operator()()
+you can understand if you read the code yourself (calling Detours::test_size(), calling Detours::attach()).
+Throws an exception on size mismatch.
+
+void	Detours::operator()(void* original_function, void* hook_function, bool need2hook = true)
+calling Detours::push_back(original_function, hook_function, need2hook)
+
+struct Detours::element	Detours::operator[](size_t i)
+return filled struct element i-th element of the vectors
+
+Detours::Detours() = default
+
+Detours::Detours(size_t allocate)
+calling Detours::reserve(allocate)
+
+~Detours::Detours()
+causes detours to be freed and Vectors memory to be freed

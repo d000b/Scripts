@@ -11,105 +11,107 @@
 
 namespace UltimaAPI
 {
-	class Detours
-	{
-	public:
-		enum eCodes
-		{
-			code_original = -1,
-			code_successful = NO_ERROR,
-			code_null =    ERROR_INVALID_HANDLE,
-			code_small =   ERROR_INVALID_BLOCK,
-			code_memory =  ERROR_NOT_ENOUGH_MEMORY,
-			code_pending = ERROR_INVALID_OPERATION
-		};
-		struct element
-		{
-			bool  b;
-			long  c;
-			void* h;
-			void* o;
-		};
-
-		Vector<bool>  need;
-		Vector<long>  code;
-		Vector<void*> hook;
-		Vector<void*> orig;
-
-		decltype(auto) hook()
-		{
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-			for (size_t i = 0; i < hook.size(); i++)
-				if (static_cast<const decltype(need)>(need)[i])
-					code[i] = DetourAttach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
-			DetourTransactionCommit();
-		}
-		decltype(auto) release()
-		{
-			DetourTransactionBegin();
-			DetourUpdateThread(GetCurrentThread());
-			for (size_t i = 0; i < orig.size(); i++)
-				if (static_cast<const decltype(need)>(need)[i])
-					code[i] = DetourDetach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
-			DetourTransactionCommit();
-		}
-		decltype(auto) push_back(void* original_function, void* hooker_function, bool b = true) noexcept
-		{
-			need.push_back(b);
-			code.push_back(eCodes::code_original);
-			hook.push_back(hooker_function);
-			orig.push_back(original_function);
-		}
-		decltype(auto) free()
-		{
-			need.free();
-			code.free();
-			hook.free();
-			orig.free();
-		}
-		decltype(auto) reserve(size_t al) noexcept
-		{
-			need.reserve(al);
-			code.reserve(al);
-			hook.reserve(al);
-			orig.reserve(al);
-		}
-		decltype(auto) test_size() noexcept
-		{
-			return hook.size() != orig.size();
-		}
-		decltype(auto) test_code()
-		{
-			for (auto&& _ : code)
-				if (!_) return true;
-			return false;
-		}
-		decltype(auto) operator()()
-		{
-			if (test_size())
-				throw;
-
-			hook();
-		}
-		decltype(auto) operator()(void* org, void* hk, bool b = true)
-		{
-			push_back(org, hk, b);
-		}
-		decltype(auto) operator[](size_t i) noexcept
-		{
-			return element{ need[i], code[i], hook[i], orig[i] };
-		}
-			
-		Detours() = default;
-		Detours(size_t al) noexcept
-		{
-			reserve(al);
-		}
-		~Detours()
-		{
-			release();
-			free();
-		}
-	};
+	class Detours;
 }
+
+class	UltimaAPI::Detours
+{
+public:
+	enum eCodes
+	{
+		code_original = -1,
+		code_successful = NO_ERROR,
+		code_null = ERROR_INVALID_HANDLE,
+		code_small = ERROR_INVALID_BLOCK,
+		code_memory = ERROR_NOT_ENOUGH_MEMORY,
+		code_pending = ERROR_INVALID_OPERATION
+	};
+	struct element
+	{
+		bool  b;
+		long  c;
+		void* h;
+		void* o;
+	};
+
+	Vector<bool>  need;
+	Vector<long>  code;
+	Vector<void*> hook;
+	Vector<void*> orig;
+
+	decltype(auto) attach() noexcept
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		for (size_t i = 0; i < hook.size(); i++)
+			if (static_cast<const decltype(need)>(need)[i])
+				code[i] = DetourAttach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
+		DetourTransactionCommit();
+	}
+	decltype(auto) release() noexcept
+	{
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		for (size_t i = 0; i < orig.size(); i++)
+			if (static_cast<const decltype(need)>(need)[i])
+				code[i] = DetourDetach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
+		DetourTransactionCommit();
+	}
+	decltype(auto) push_back(void* original_function, void* hooker_function, bool b = true) noexcept
+	{
+		need.push_back(b);
+		code.push_back(eCodes::code_original);
+		hook.push_back(hooker_function);
+		orig.push_back(original_function);
+	}
+	decltype(auto) free() noexcept
+	{
+		need.free();
+		code.free();
+		hook.free();
+		orig.free();
+	}
+	decltype(auto) reserve(size_t al) noexcept
+	{
+		need.reserve(al);
+		code.reserve(al);
+		hook.reserve(al);
+		orig.reserve(al);
+	}
+	decltype(auto) test_size() noexcept
+	{
+		return hook.size() != orig.size();
+	}
+	decltype(auto) test_code() noexcept
+	{
+		for (auto&& _ : code)
+			if (!_) return true; // _ != eCodes::code_successful
+		return false;
+	}
+	decltype(auto) operator()()
+	{
+		if (test_size())
+			throw(Detours());
+
+		attach();
+	}
+	decltype(auto) operator()(void* org, void* hk, bool b = true) noexcept
+	{
+		push_back(org, hk, b);
+	}
+	decltype(auto) operator[](size_t i) noexcept
+	{
+		return element{ need[i], code[i], hook[i], orig[i] };
+	}
+
+	Detours() = default;
+	Detours(size_t al) noexcept
+	{
+		reserve(al);
+	}
+	~Detours()
+	{
+		release();
+		free();
+	}
+};
