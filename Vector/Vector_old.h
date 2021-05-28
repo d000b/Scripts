@@ -304,13 +304,13 @@ public:
 	}
 	Vector(size_t sz) noexcept
 	{
-		used = 0;
+		allocated = used = 0;
 		start = nullptr;
 		allocate(sz);
 	}
 	Vector(size_t sz, type* ray) noexcept
 	{
-		used = 0;
+		allocated = used = 0;
 		start = nullptr;
 		insert(0, ray, sz);
 	}
@@ -321,7 +321,7 @@ public:
 
 	Vector(const size_t sz, const type* ray) noexcept
 	{
-		used = 0;
+		allocated = used = 0;
 		start = nullptr;
 		insert(0, ray, sz);
 	}
