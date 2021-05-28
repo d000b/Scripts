@@ -3,10 +3,10 @@
 #include "../Vector/Vector_old.h"
 
 #include "detour/detours.h"
-#if defined(WIN64) && WIN64
-#pragma comment(lib, "detour/detour_x64")
+#if defined(_WIN64) && _WIN64
+#pragma comment(lib, "D:/Github/Scripts/Detours/detour/detours_x64")
 #else
-#pragma comment(lib, "detour/detour_x86")
+#pragma comment(lib, "D:/Github/Scripts/Detours/detour/detours_x86")
 #endif
 
 namespace UltimaAPI
@@ -44,18 +44,25 @@ public:
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		for (size_t i = 0; i < hook.size(); i++)
-			if (static_cast<const decltype(need)>(need)[i])
-				code[i] = DetourAttach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
+			if (need.data()[i])
+				code[i] = DetourAttach(&orig.data()[i], hook.data()[i]);
 		DetourTransactionCommit();
 	}
-	decltype(auto) release() noexcept
+	decltype(auto) detach() noexcept
 	{
 		DetourTransactionBegin();
 		DetourUpdateThread(GetCurrentThread());
 		for (size_t i = 0; i < orig.size(); i++)
-			if (static_cast<const decltype(need)>(need)[i])
-				code[i] = DetourDetach(&static_cast<const decltype(orig)>(orig)[i], static_cast<const decltype(hook)>(hook)[i]);
+			if (need.data()[i])
+				code[i] = DetourDetach(&orig.data()[i], hook.data()[i]);
 		DetourTransactionCommit();
+	}
+	decltype(auto) shrink_to_fit()
+	{
+		need.shrink_to_fit();
+		code.shrink_to_fit();
+		hook.shrink_to_fit();
+		orig.shrink_to_fit();
 	}
 	decltype(auto) push_back(void* original_function, void* hooker_function, bool b = true) noexcept
 	{
@@ -104,6 +111,15 @@ public:
 		return element{ need[i], code[i], hook[i], orig[i] };
 	}
 
+	template <typename Fn> Fn o(size_t i)
+	{
+		return reinterpret_cast<Fn>(orig[i]);
+	}
+	template <typename Fn, typename...Args> Fn O(size_t i, Args...args)
+	{
+		return reinterpret_cast<Fn>(orig[i])(args...);
+	}
+
 	Detours() = default;
 	Detours(size_t al) noexcept
 	{
@@ -111,7 +127,7 @@ public:
 	}
 	~Detours()
 	{
-		release();
+		detach();
 		free();
 	}
 };
