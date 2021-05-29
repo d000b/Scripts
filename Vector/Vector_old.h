@@ -4,6 +4,7 @@
 #include <initializer_list>
 
 #include "../BasicIterator/BasicIterator.h"
+#include "../Memory/util.h"
 
 namespace UltimaAPI
 {
@@ -54,25 +55,50 @@ public:
 		if (used > 0)
 			--used;
 	}
+	decltype(auto) insert_correct(size_t place)
+	{
+		bool ret = true;
+		if (place > used)
+		{
+			used = place;
+			ret = false;
+		}
+		if (used >= allocated)
+			allocate(used * mul_alloc + 1);
+		return ret;
+	}
+	decltype(auto) insert_correct(size_t place, size_t count)
+	{
+		bool ret = true;
+		if (place + count > used)
+		{
+			used = place + count;
+			ret = false;
+		}
+		if (used >= allocated)
+			allocate(used * mul_alloc + 1);
+		return ret;
+	}
+	decltype(auto) move_insert(size_t place, type val)
+	{
+		if (insert_correct(place))
+			Memory::memcpy(start + place + 1, start + place, used - place);
+		start[place] = val;
+	}
+	decltype(auto) move_insert(size_t place, type* val, size_t count)
+	{
+		if (insert_correct(place, count))
+			Memory::memcpy(start + place + count, start + place, used - place);
+		Memory::memcpy(start + place, val, count * sizeof(type));
+	}
 	decltype(auto) insert(size_t place, type val) noexcept
 	{
-		if (place >= allocated)
-		{
-			allocate((used = place) * mul_alloc + 1);
-			start[used] = val;
-		}
-		else if (place > used)
-		{
-			start[used = place] = val;
-		}
-		else start[place] = val;
+		insert_correct(place);
+		start[place] = val;
 	}
 	decltype(auto) insert(size_t place, type* val, size_t count) noexcept
 	{
-		if (place + count >= allocated)
-			allocate((used = place + count) * mul_alloc + 1);
-		else if (place + count > used)
-			used = place + count;
+		insert_correct(place, count);
 		memcpy(start + place, val, count * sizeof(type));
 	}
 	decltype(auto) size() noexcept
@@ -144,6 +170,13 @@ public:
 	{
 		return start;
 	}
+	decltype(auto) swap(size_t i, size_t j)
+	{
+		if (i == j)
+			return;
+		insert_correct(i > j ? i : j);
+		std::swap(start[i], start[j]);
+	}
 	decltype(auto) swap(Vector<type>& v) noexcept
 	{
 		std::swap(*this, v);
@@ -211,7 +244,7 @@ public:
 	}
 	decltype(auto) end() noexcept
 	{
-		return iterator(start + used);
+		return iterator(last());
 	}
 	decltype(auto) cbegin() const noexcept
 	{
@@ -219,7 +252,7 @@ public:
 	}
 	decltype(auto) cend() const noexcept
 	{
-		return const_iterator(start + used);
+		return const_iterator(last());
 	}
 	decltype(auto) rbegin() noexcept
 	{
