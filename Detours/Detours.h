@@ -5,7 +5,7 @@
 
 #include "../Vector/Vector_old.h"
 
-#if defined(USE_NEW_DETOURS) && USE_NEW_DETOURS || defined(AUTO_VERSION_CHANGE) && AUTO_VERSION_CHANGE && defined(_WIN64) && _WIN64
+#if defined(_WIN64) && _WIN64 && (defined(USE_NEW_DETOURS) && USE_NEW_DETOURS || defined(AUTO_VERSION_CHANGE) && AUTO_VERSION_CHANGE)
 
 #define USED_NEW_DETOURS 1
 
