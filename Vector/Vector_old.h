@@ -326,6 +326,15 @@ public:
 		return start[i];
 	}
 
+	decltype(auto) operator<(size_t i) const noexcept
+	{
+		return used < i;
+	}
+	decltype(auto) operator>(size_t i) const noexcept
+	{
+		return used > i;
+	}
+	
 	Vector(std::initializer_list<type> v) noexcept
 	{
 		this->operator()(v);
