@@ -101,6 +101,16 @@ public:
 		insert_correct(place, count);
 		memcpy(start + place, val, count * sizeof(type));
 	}
+	decltype(auto) insert(size_t place, std::initializer_list<type> list) noexcept
+	{
+		insert_correct(place, list.size());
+		memcpy(start + place, list.begin(), list.size() * sizeof(type));
+	}
+	decltype(auto) insert(std::initializer_list<type> list) noexcept
+	{
+		insert_correct(used, list.size());
+		memcpy(start + used, list.begin(), list.size() * sizeof(type));
+	}
 	decltype(auto) size() noexcept
 	{
 		return used;
