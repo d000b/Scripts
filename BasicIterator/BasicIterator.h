@@ -12,35 +12,41 @@ namespace UltimaAPI
 }
 
 template <typename type>
-class  UltimaAPI::BasicIterator : public std::iterator<std::input_iterator_tag, type>
+class  UltimaAPI::BasicIterator
 {
 	extern friend class UltimaAPI::Vector<type>;
+	
+	using value_type = type;
+	using iterator_category = std::forward_iterator_tag;
+	using difference_type = std::ptrdiff_t;
+	using pointer = value_type*;
+	using reference = value_type&;
 
-	type* pointer;
+	pointer ptr;
 public:
-	BasicIterator(type* p) : pointer(p) { }
-	BasicIterator(const BasicIterator& it) : pointer(it.p) { }
+	BasicIterator(pointer p) : ptr(p) { }
+	BasicIterator(const BasicIterator& it) : ptr(it.ptr) { }
 
 	bool operator!=(BasicIterator const& it) const
 	{
-		return pointer != it.pointer;
+		return ptr != it.ptr;
 	}
 	bool operator==(BasicIterator const& it) const
 	{
-		return pointer == it.pointer;
+		return ptr == it.ptr;
 	}
-	typename BasicIterator::reference operator*() const
+	reference operator*() const
 	{
-		return *pointer;
+		return *ptr;
 	}
 	BasicIterator& operator++()
 	{
-		pointer++;
+		ptr++;
 		return *this;
 	}
 	BasicIterator& operator--()
 	{
-		pointer--;
+		ptr--;
 		return *this;
 	}
 };
