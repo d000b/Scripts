@@ -42,19 +42,6 @@ private:
 		}
 		else free();
 	}
-public:
-	decltype(auto) push_back(type val) noexcept
-	{
-		if (used >= allocated)
-			allocate(alloc_step());
-		start[used] = val;
-		++used;
-	}
-	decltype(auto) pop_back() noexcept
-	{
-		if (used > 0)
-			--used;
-	}
 	decltype(auto) insert_correct(size_t place)
 	{
 		bool ret = true;
@@ -79,6 +66,24 @@ public:
 			allocate(used * mul_alloc + 1);
 		return ret;
 	}
+public:
+	decltype(auto) push_back(type val) noexcept
+	{
+		if (used >= allocated)
+			allocate(alloc_step());
+		start[used] = val;
+		++used;
+	}
+	decltype(auto) push_back(type* val, size_t c) noexcept
+	{
+		move_insert(used, val, c);
+	}
+	decltype(auto) pop_back() noexcept
+	{
+		if (used > 0)
+			--used;
+	}
+	
 	decltype(auto) move_insert(size_t place, type val)
 	{
 		if (insert_correct(place))
