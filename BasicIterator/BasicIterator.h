@@ -27,9 +27,25 @@ public:
 	BasicIterator(pointer p) : ptr(p) { }
 	BasicIterator(const BasicIterator& it) : ptr(it.ptr) { }
 
+	bool operator!=(const value_type v) const
+	{
+		return *ptr != v;
+	}
+	bool operator!=(const pointer v) const
+	{
+		return ptr != v;
+	}
 	bool operator!=(BasicIterator const& it) const
 	{
 		return ptr != it.ptr;
+	}
+	bool operator==(const value_type v) const
+	{
+		return *ptr == v;
+	}
+	bool operator==(const pointer v) const
+	{
+		return ptr == v;
 	}
 	bool operator==(BasicIterator const& it) const
 	{
