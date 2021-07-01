@@ -20,6 +20,8 @@ class UltimaAPI::Vector
 	size_t allocated;
 	type*  start;
 public:
+	static const size_t npos = -1;
+
 	using iterator = BasicIterator<type>;
 	using const_iterator = BasicIterator<const type>;
 	using reverse_iterator = std::reverse_iterator<iterator>;
@@ -66,6 +68,28 @@ private:
 			allocate(used * mul_alloc + 1);
 		return ret;
 	}
+
+	decltype(auto) forward_sequence(size_t idx, size_t len, type* val)
+	{
+		for (size_t s = 0; s < len; s++)
+			if (start[idx + s] != val[s])
+				return npos;
+		return idx;
+	}
+	decltype(auto) backward_sequence(size_t idx, size_t len, type* val)
+	{
+		for (size_t s = len - 1; s != npos; s--)
+			if (start[idx + s] != val[s])
+				return npos;
+		return idx;
+	}
+public:
+	enum eSequence
+	{
+		seq_null,
+		seq_forward,
+		seq_backward
+	};
 public:
 	decltype(auto) push_back(type val) noexcept
 	{
@@ -251,6 +275,128 @@ public:
 	{
 		if (used < allocated)
 			allocate(used);
+	}
+
+	decltype(auto) iterator_find(type val)
+	{
+		auto b = begin();
+		auto e = end();
+		while (b != e)
+		{
+			if (b == val)
+				return b;
+			++b;
+		}
+		return e; // end();
+	}
+	decltype(auto) iterator_reverse_find(type val)
+	{
+		if (used > 0)
+		{
+			auto it = end();
+			auto b = begin();
+			--it;
+			while (b != it)
+			{
+				if (it == val)
+					return it;
+				--it;
+			}
+		}
+		return end();
+	}
+	decltype(auto) find(type val)
+	{
+		for (size_t i = 0; i < used; i++)
+			if (start[i] == val)
+				return i;
+		return npos;
+	}
+	decltype(auto) reverse_find(type val)
+	{
+		if (used > 0)
+		{
+			for (size_t i = used - 1; i != npos; i--)
+				if (start[i] == val)
+					return i;
+		}
+		else return npos;
+	}
+	decltype(auto) iterator_sequence_find(size_t len, type* val, eSequence e)
+	{
+		if (auto _ = sequence_find(len, val, e))
+			return iterator(start + _);
+		return end();
+	}
+	decltype(auto) iterator_reverse_sequence_find(size_t len, type* val, eSequence e)
+	{
+		if (auto _ = reverse_sequence_find(len, val, e))
+			return iterator(start + _);
+		return end();
+	}
+	decltype(auto) sequence_find(size_t len, type* val, eSequence e)
+	{
+		switch (e)
+		{
+			default:
+			case eSequence::seq_null:
+				break;
+
+			if (used >= len && len > 0)
+			{
+				case eSequence::seq_forward:
+				{
+					for (size_t i = 0; i <= used - len; i++)
+					{
+						auto _ = forward_sequence(i, len, val);
+						if (_ != npos)
+							return _;
+					}
+				}
+				case eSequence::seq_backward:
+				{
+					for (size_t i = len - 1; i <= used; i++)
+					{
+						auto _ = backward_sequence(i, len, val);
+						if (_ != npos)
+							return _;
+					}
+				}
+			}
+		}
+		return npos;
+	}
+	decltype(auto) reverse_sequence_find(size_t len, type* val, eSequence e)
+	{
+		switch (e)
+		{
+			default:
+			case eSequence::seq_null:
+				break;
+
+			if (used >= len && len > 0)
+			{
+				case eSequence::seq_forward:
+				{
+					for (size_t i = used - len; i != npos; i--)
+					{
+						auto _ = forward_sequence(i, len, val);
+						if (_ != npos)
+							return _;
+					}
+				}
+				case eSequence::seq_backward:
+				{
+					for (size_t i = used - 1; i != npos + len; i--)
+					{
+						auto _ = backward_sequence(i, len, val);
+						if (_ != npos)
+							return _;
+					}
+				}
+			}
+		}
+		return npos;
 	}
 
 	decltype(auto) begin() noexcept
